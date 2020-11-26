@@ -3,8 +3,16 @@ import Server from "./server.ts";
 
 const router = new Router();
 
-router.get("/hello/:id", async (req, params) => {
+router.get("/", async (req) => {
+  req.respond({
+    status: 200,
+    body: "Hello root!",
+  });
+});
+
+router.get("/hello/:id", async (req, params, q) => {
   console.log(params);
+  console.log(q);
 
   req.respond({
     status: 200,
@@ -12,10 +20,10 @@ router.get("/hello/:id", async (req, params) => {
   });
 });
 
-router.get("/", async (req) => {
+router.post("/", async (req) => {
   req.respond({
     status: 200,
-    body: "Hello root!",
+    body: "Hello POST root!",
   });
 });
 

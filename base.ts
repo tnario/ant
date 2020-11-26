@@ -9,10 +9,12 @@ export class Node {
 
   public paramsMap: string[][];
 
-  constructor() {
+  constructor();
+  constructor(callback: Callback, paramsMap: string[][]);
+  constructor(p1?: any, p2?: any) {
     this.children = {};
-    this.callback = undefined;
-    this.paramsMap = [];
+    this.callback = p1 || undefined;
+    this.paramsMap = p2 || [];
   }
 }
 
@@ -23,7 +25,7 @@ export class Route {
 
   public path: string[];
 
-  public callback: Callback | undefined;
+  public callback: Callback;
 
   public paramsMap: string[][];
 
@@ -47,10 +49,7 @@ export class Route {
 export class Storage {
   protected routes: Route[];
 
-  protected middlewares: unknown[];
-
   constructor() {
-    this.middlewares = [];
     this.routes = [];
   }
 
