@@ -1,32 +1,17 @@
-import Router from "./router.ts";
-import Server from "./server.ts";
+import Application from "./src/application.ts";
 
-const router = new Router();
+const app = new Application({ port: 8000 });
 
-router.get("/", async (req) => {
-  req.respond({
-    status: 200,
-    body: "Hello root!",
-  });
-});
+app.get(
+  "/hello",
+  async (req) => {
+    console.log("lol");
+  },
+  async (req) => {
+    console.log("lol 2");
 
-router.get("/hello/:id", async (req, params, q) => {
-  console.log(params);
-  console.log(q);
+    req.respond({});
+  }
+);
 
-  req.respond({
-    status: 200,
-    body: "Hello World!",
-  });
-});
-
-router.post("/", async (req) => {
-  req.respond({
-    status: 200,
-    body: "Hello POST root!",
-  });
-});
-
-const server = new Server();
-
-server.useRouter("/", router).run("localhost:8080");
+app.run();
