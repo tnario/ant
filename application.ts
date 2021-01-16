@@ -1,13 +1,16 @@
 import {
   HTTPOptions,
+  Response,
   serve,
   Server,
 } from "https://deno.land/std@0.83.0/http/server.ts";
 import Router from "./router.ts";
-import { RouteNode } from "./containers.ts";
-import { parseQueryString } from "./utilities.ts";
+import { ResponseCtx, RouteNode } from "./containers.ts";
+import { parseQueryString, parseRoute } from "./utilities.ts";
+import { CallBack, RouteData } from "./types.ts";
+import { RequestCtx } from "./request.ts";
 
-export default class Application extends Router {
+export class Application extends Router {
   #server: Server;
   #routeTree: Record<string, RouteNode> = {};
 
@@ -17,6 +20,13 @@ export default class Application extends Router {
     this.#server = serve(addr);
   }
 
+  mount(path: string, router: Router) {
+    for (const route of router.routes) {
+      route.path = path + route.path;
+      this.routeTable.push(route);
+    }
+  }
+
   private compileRouteTree() {
     for (const route of this.routeTable) {
       if (!(route.method in this.#routeTree)) {
@@ -24,10 +34,11 @@ export default class Application extends Router {
       }
 
       let node = this.#routeTree[route.method];
-      const lastIndex = route.path.length - 1;
+      const [pathSegments, paramMap] = parseRoute(route.path);
+      const lastIndex = pathSegments.length - 1;
 
       for (let i = 0; i < lastIndex; i++) {
-        const seg = route.path[i];
+        const seg = pathSegments[i];
 
         if (!(seg in node.children)) {
           node.children[seg] = new RouteNode();
@@ -36,14 +47,14 @@ export default class Application extends Router {
         node = node.children[seg];
       }
 
-      node.children[route.path[lastIndex]] = new RouteNode(
+      node.children[pathSegments[lastIndex]] = new RouteNode(
         route.callbacks,
-        route.params
+        paramMap
       );
     }
   }
 
-  private getRoute(method: string, url: string) {
+  private getRoute(method: string, url: string): RouteData | undefined {
     if (!(method in this.#routeTree)) {
       return undefined;
     }
@@ -80,6 +91,30 @@ export default class Application extends Router {
     };
   }
 
+  private async runPipeline(
+    req: RequestCtx,
+    res: ResponseCtx,
+    callbacks: CallBack[]
+  ) {
+    let prevIndex = -1;
+
+    const execNext = async (index: number): Promise<void> => {
+      if (index === prevIndex) {
+        throw new Error("next() called multiple times!");
+      }
+
+      prevIndex = index;
+
+      const callback = callbacks[index];
+
+      if (callback !== undefined) {
+        await callback(req, res, () => execNext(index + 1));
+      }
+    };
+
+    await execNext(0);
+  }
+
   async run() {
     this.compileRouteTree();
 
@@ -91,11 +126,17 @@ export default class Application extends Router {
           throw new Error("Not Found 404");
         }
 
-        const { callbacks } = routeNode;
+        const { callbacks, params, query } = routeNode;
 
-        for await (const callback of callbacks) {
-          callback(req);
-        }
+        const requestCtx = new RequestCtx(req, params, query);
+        const responseCtx = new ResponseCtx();
+
+        this.runPipeline(requestCtx, responseCtx, [
+          ...this.beforeMiddleware,
+          ...callbacks,
+        ]);
+
+        req.respond(responseCtx._data);
       } catch (error) {
         req.respond({ status: 500 });
         console.log(error);
