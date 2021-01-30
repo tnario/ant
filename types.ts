@@ -1,8 +1,8 @@
 import { ServerRequest } from "https://deno.land/std@0.83.0/http/server.ts";
-import { ResponseCtx } from "./containers.ts";
 import { RequestCtx } from "./request.ts";
+import { ResponseCtx } from "./response.ts";
 
-export type NextFn = () => Promise<void> | void;
+export type ErrorFn = (err: any) => Promise<void> | void;
 
 export type Context = {
   req: ServerRequest;
@@ -13,7 +13,13 @@ export type Context = {
 export type CallBack<P = any, Q = any, B = any> = (
   req: RequestCtx<P, Q, B>,
   res: ResponseCtx,
-  next: NextFn
+  error: ErrorFn
+) => Promise<void>;
+
+export type ErrorCallBack<P = any, Q = any, B = any> = (
+  err: any,
+  req: RequestCtx<P, Q, B>,
+  res: ResponseCtx
 ) => Promise<void>;
 
 export type RouteData = {

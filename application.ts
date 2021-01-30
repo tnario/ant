@@ -4,31 +4,38 @@ import {
   serve,
   Server,
 } from "https://deno.land/std@0.83.0/http/server.ts";
-import Router from "./router.ts";
-import { ResponseCtx, RouteNode } from "./containers.ts";
+import { Router } from "./router.ts";
+import { Route, RouteNode } from "./containers.ts";
 import { parseQueryString, parseRoute } from "./utilities.ts";
-import { CallBack, RouteData } from "./types.ts";
+import { CallBack, ErrorCallBack, RouteData } from "./types.ts";
 import { RequestCtx } from "./request.ts";
+import { HTTP_METHOD } from "./constants.ts";
+import { ResponseCtx } from "./response.ts";
 
-export class Application extends Router {
-  #server: Server;
+export class Application {
+  #server: (addr: string | HTTPOptions) => Server = serve;
   #routeTree: Record<string, RouteNode> = {};
+  #routesTable: Route[] = [];
+  #appMiddleware: CallBack[] = [];
+  #routerMiddleware: CallBack[] = [];
+  #errorHandlers: ErrorCallBack[] = [];
 
-  constructor(addr: string | HTTPOptions) {
-    super();
-
-    this.#server = serve(addr);
-  }
+  constructor() {}
 
   mount(path: string, router: Router) {
-    for (const route of router.routes) {
+    this.#routerMiddleware.push(...router._middleware);
+    for (const route of router._routes) {
       route.path = path + route.path;
-      this.routeTable.push(route);
+      this.#routesTable.push(route);
     }
   }
 
+  use(...middleware: CallBack[]) {
+    return this.#appMiddleware.push(...middleware);
+  }
+
   private compileRouteTree() {
-    for (const route of this.routeTable) {
+    for (const route of this.#routesTable) {
       if (!(route.method in this.#routeTree)) {
         this.#routeTree[route.method] = new RouteNode();
       }
@@ -79,6 +86,11 @@ export class Application extends Router {
       node = node.children[seg];
     }
 
+    // Check if route was registered
+    if (node.callbacks.length === 0) {
+      return undefined;
+    }
+
     const params: Record<string, string> = {};
     for (const i of paramIndexes) {
       params[node.params[i]] = pathSegments[i];
@@ -91,56 +103,124 @@ export class Application extends Router {
     };
   }
 
-  private async runPipeline(
-    req: RequestCtx,
-    res: ResponseCtx,
-    callbacks: CallBack[]
-  ) {
-    let prevIndex = -1;
-
-    const execNext = async (index: number): Promise<void> => {
-      if (index === prevIndex) {
-        throw new Error("next() called multiple times!");
-      }
-
-      prevIndex = index;
-
-      const callback = callbacks[index];
-
-      if (callback !== undefined) {
-        await callback(req, res, () => execNext(index + 1));
-      }
-    };
-
-    await execNext(0);
+  error(...handlers: ErrorCallBack[]) {
+    this.#errorHandlers.push(...handlers);
   }
 
-  async run() {
+  get<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.GET, path, callbacks));
+
+    return this;
+  }
+
+  post<P = any, Q = any, B = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q, B>[]
+  ) {
+    this.#routesTable.push(new Route(HTTP_METHOD.POST, path, callbacks));
+
+    return this;
+  }
+
+  delete<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.DELETE, path, callbacks));
+
+    return this;
+  }
+
+  put<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.PUT, path, callbacks));
+
+    return this;
+  }
+
+  async run(addr: string | HTTPOptions, cb?: () => void) {
     this.compileRouteTree();
+    cb && cb();
 
-    for await (const req of this.#server) {
-      try {
-        const routeNode = this.getRoute(req.method, req.url);
-
-        if (routeNode === undefined) {
-          throw new Error("Not Found 404");
-        }
-
-        const { callbacks, params, query } = routeNode;
-
-        const requestCtx = new RequestCtx(req, params, query);
-        const responseCtx = new ResponseCtx();
-
-        this.runPipeline(requestCtx, responseCtx, [
-          ...this.beforeMiddleware,
-          ...callbacks,
-        ]);
-
-        req.respond(responseCtx._data);
-      } catch (error) {
-        req.respond({ status: 500 });
-        console.log(error);
+    for await (const req of this.#server(addr)) {
+      if (req.url === "/favicon.ico") {
+        // Ignore /favicon.ico
+        req.respond({
+          status: 404,
+          body: `${req.method} ${req.url} 404 (Not Found)`,
+        });
+        continue;
       }
+
+      const routeNode = this.getRoute(req.method, req.url);
+
+      if (routeNode === undefined) {
+        req.respond({
+          status: 400,
+          body: `${req.method} ${req.url} 400 (Bad Request)`,
+        });
+        continue;
+      }
+
+      const { callbacks, params, query } = routeNode;
+
+      const requestCtx = new RequestCtx(req, params, query);
+
+      const callbackStack = [
+        ...this.#appMiddleware, // Application-Level
+        ...this.#routerMiddleware, // Router-Level
+        ...callbacks, // Route-Level
+      ];
+
+      let DONE = false;
+      let error;
+
+      const responsePayload: Response = {
+        // Default response values
+        status: 200,
+      };
+      const responseCtx = new ResponseCtx(DONE, responsePayload);
+
+      const errorHandler = (err: any) => {
+        error = err;
+        DONE = true;
+      };
+
+      // Process incoming request
+      for (const cb of callbackStack) {
+        try {
+          if (DONE) break;
+
+          await cb(requestCtx, responseCtx, errorHandler);
+        } catch (e) {
+          error = e;
+          break;
+        }
+      }
+
+      // If no errors, send back the response
+      if (!error) {
+        req.respond(responsePayload);
+        continue;
+      }
+
+      let ERROR_DONE = false;
+
+      const errorResponse: Response = {
+        // Default error response
+        status: 500,
+      };
+      const errorResponseCtx = new ResponseCtx(ERROR_DONE, errorResponse);
+
+      // Handle the error
+      for (const ecb of this.#errorHandlers) {
+        try {
+          if (ERROR_DONE) break;
+
+          await ecb(error, requestCtx, errorResponseCtx);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Send error response
+      req.respond(errorResponse);
     }
   }
 }

@@ -1,8 +1,4 @@
 import { ServerRequest } from "https://deno.land/std@0.83.0/http/server.ts";
-import { CONTENT_TYPES } from "./constants.ts";
-
-type BodyType = "json" | "text" | "raw";
-
 export class RequestCtx<
   P = Record<string, string>,
   Q = Record<string, string>,

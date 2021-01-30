@@ -2,21 +2,21 @@ import { HTTP_METHOD } from "./constants.ts";
 import { Route } from "./containers.ts";
 import { CallBack } from "./types.ts";
 
-export default class Router {
+export class Router {
   protected routeTable: Route[] = [];
   protected beforeMiddleware: CallBack[] = [];
 
   constructor() {}
 
-  get middleware() {
+  get _middleware() {
     return this.beforeMiddleware;
   }
 
-  get routes() {
+  get _routes() {
     return this.routeTable;
   }
 
-  useBefore(...middleware: CallBack[]) {
+  use(...middleware: CallBack[]) {
     this.beforeMiddleware.push(...middleware);
   }
 

@@ -1,43 +1,39 @@
-import { Application } from "../mod.ts";
+import { Application, Router } from "../mod.ts";
 
-const app = new Application({ port: 8000 });
+const app = new Application();
+const router = new Router();
 
-app.useBefore(
-  async (req, res, next) => {
-    console.log("middle");
-    next();
-  },
-  async (req, res, next) => {
-    console.log("middle2");
-    next();
-  }
-);
-
-type params = { id: string };
-type query = { qq: string };
-
-app.get<params, query>(
-  "/hello/:id",
-  async (req, res, next) => {
-    console.log(req.params.id);
-    next();
-  },
-  async (req, res) => {
-    console.log(req.query.qq);
-    res
-      .status(204)
-      .set({ "Content-Type": "application/json" })
-      .send(JSON.stringify({}));
-  }
-);
-
-type body = { qqq: string; fref: number };
-
-app.post<any, any, body>("/", async (req, res) => {
-  const data = req.headers;
-  console.log(data);
-
-  res.send("");
+router.use(async (req, res) => {
+  console.log("router middle");
 });
 
-app.run();
+app.use(async (req, res, error) => {
+  console.log("app middle");
+  error(new Error("Oh No!"));
+});
+
+router.get(
+  "/",
+  async (req, res) => {
+    console.log("hello");
+  },
+  async (req, res, end) => {
+    console.log("world");
+    end(1);
+  }
+);
+
+app.error(async (err, req, res) => {
+  console.log("ERROR 1");
+  console.log(req.url, err);
+  res
+    .status(404)
+    .send(JSON.stringify({ hello: "error" }))
+    .json();
+});
+
+app.mount("/hello", router);
+
+app.run({ port: 8000 }, () => {
+  console.log("localhost:8000");
+});
