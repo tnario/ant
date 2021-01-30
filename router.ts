@@ -3,25 +3,25 @@ import { Route } from "./containers.ts";
 import { CallBack } from "./types.ts";
 
 export class Router {
-  protected routeTable: Route[] = [];
-  protected beforeMiddleware: CallBack[] = [];
+  #routesTable: Route[] = [];
+  #beforeMiddleware: CallBack[] = [];
 
   constructor() {}
 
   get _middleware() {
-    return this.beforeMiddleware;
+    return this.#beforeMiddleware;
   }
 
   get _routes() {
-    return this.routeTable;
+    return this.#routesTable;
   }
 
   use(...middleware: CallBack[]) {
-    this.beforeMiddleware.push(...middleware);
+    this.#beforeMiddleware.push(...middleware);
   }
 
   get<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routeTable.push(new Route(HTTP_METHOD.GET, path, callbacks));
+    this.#routesTable.push(new Route(HTTP_METHOD.GET, path, callbacks));
 
     return this;
   }
@@ -30,17 +30,46 @@ export class Router {
     path: string,
     ...callbacks: CallBack<P, Q, B>[]
   ) {
-    this.routeTable.push(new Route(HTTP_METHOD.POST, path, callbacks));
+    this.#routesTable.push(new Route(HTTP_METHOD.POST, path, callbacks));
 
     return this;
   }
   delete<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routeTable.push(new Route(HTTP_METHOD.DELETE, path, callbacks));
+    this.#routesTable.push(new Route(HTTP_METHOD.DELETE, path, callbacks));
 
     return this;
   }
   put<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routeTable.push(new Route(HTTP_METHOD.PUT, path, callbacks));
+    this.#routesTable.push(new Route(HTTP_METHOD.PUT, path, callbacks));
+
+    return this;
+  }
+  options<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.OPTIONS, path, callbacks));
+
+    return this;
+  }
+
+  patch<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.PATCH, path, callbacks));
+
+    return this;
+  }
+
+  head<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.HEAD, path, callbacks));
+
+    return this;
+  }
+
+  trace<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.TRACE, path, callbacks));
+
+    return this;
+  }
+
+  connect<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.CONNECT, path, callbacks));
 
     return this;
   }

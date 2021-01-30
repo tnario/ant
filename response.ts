@@ -33,10 +33,6 @@ export class ResponseCtx {
     return this;
   }
 
-  get meta() {
-    return this.#meta;
-  }
-
   send(d: Uint8Array | Deno.Reader | string) {
     this.#done = true;
 

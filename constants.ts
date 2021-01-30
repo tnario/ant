@@ -2,7 +2,12 @@ export namespace HTTP_METHOD {
   export const GET = "GET",
     POST = "POST",
     DELETE = "DELETE",
-    PUT = "PUT";
+    PUT = "PUT",
+    HEAD = "HEAD",
+    CONNECT = "CONNECT",
+    OPTIONS = "OPTIONS",
+    PATCH = "PATCH",
+    TRACE = "TRACE";
 }
 
 export namespace CONTENT_TYPES {

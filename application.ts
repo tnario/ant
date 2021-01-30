@@ -103,33 +103,60 @@ export class Application {
     };
   }
 
-  error(...handlers: ErrorCallBack[]) {
-    this.#errorHandlers.push(...handlers);
+  error(...steps: ErrorCallBack[]) {
+    this.#errorHandlers.push(...steps);
   }
 
-  get<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.GET, path, callbacks));
+  get<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.GET, path, steps));
 
     return this;
   }
 
-  post<P = any, Q = any, B = any>(
-    path: string,
-    ...callbacks: CallBack<P, Q, B>[]
-  ) {
-    this.#routesTable.push(new Route(HTTP_METHOD.POST, path, callbacks));
+  post<P = any, Q = any, B = any>(path: string, ...steps: CallBack<P, Q, B>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.POST, path, steps));
 
     return this;
   }
 
-  delete<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.DELETE, path, callbacks));
+  delete<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.DELETE, path, steps));
 
     return this;
   }
 
-  put<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.PUT, path, callbacks));
+  put<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.PUT, path, steps));
+
+    return this;
+  }
+
+  options<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.OPTIONS, path, steps));
+
+    return this;
+  }
+
+  patch<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.PATCH, path, steps));
+
+    return this;
+  }
+
+  head<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.HEAD, path, steps));
+
+    return this;
+  }
+
+  trace<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.TRACE, path, steps));
+
+    return this;
+  }
+
+  connect<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
+    this.#routesTable.push(new Route(HTTP_METHOD.CONNECT, path, steps));
 
     return this;
   }
@@ -177,7 +204,7 @@ export class Application {
       };
       const responseCtx = new ResponseCtx(DONE, responsePayload);
 
-      const errorHandler = (err: any) => {
+      const errorFn = (err: any) => {
         error = err;
         DONE = true;
       };
@@ -187,7 +214,7 @@ export class Application {
         try {
           if (DONE) break;
 
-          await cb(requestCtx, responseCtx, errorHandler);
+          await cb(requestCtx, responseCtx, errorFn);
         } catch (e) {
           error = e;
           break;
