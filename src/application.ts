@@ -5,14 +5,13 @@ import {
   Server,
 } from "https://deno.land/std@0.83.0/http/server.ts";
 import { Router } from "./router.ts";
-import { Route, RouteNode } from "./containers.ts";
+import { Route, RouteBuilder, RouteNode } from "./containers.ts";
 import { parseQueryString, parseRoute } from "./utilities.ts";
 import { CallBack, ErrorCallBack, RouteData } from "./types.ts";
 import { RequestCtx } from "./request.ts";
-import { HTTP_METHOD } from "./constants.ts";
 import { ResponseCtx } from "./response.ts";
 
-export class Application {
+export class Application extends RouteBuilder {
   #server: (addr: string | HTTPOptions) => Server = serve;
   #routeTree: Record<string, RouteNode> = {};
   #routesTable: Route[] = [];
@@ -20,7 +19,9 @@ export class Application {
   #routerMiddleware: CallBack[] = [];
   #errorHandlers: ErrorCallBack[] = [];
 
-  constructor() {}
+  constructor() {
+    super();
+  }
 
   mount(path: string, router: Router) {
     this.#routerMiddleware.push(...router._middleware);
@@ -107,67 +108,13 @@ export class Application {
     this.#errorHandlers.push(...steps);
   }
 
-  get<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.GET, path, steps));
-
-    return this;
-  }
-
-  post<P = any, Q = any, B = any>(path: string, ...steps: CallBack<P, Q, B>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.POST, path, steps));
-
-    return this;
-  }
-
-  delete<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.DELETE, path, steps));
-
-    return this;
-  }
-
-  put<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.PUT, path, steps));
-
-    return this;
-  }
-
-  options<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.OPTIONS, path, steps));
-
-    return this;
-  }
-
-  patch<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.PATCH, path, steps));
-
-    return this;
-  }
-
-  head<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.HEAD, path, steps));
-
-    return this;
-  }
-
-  trace<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.TRACE, path, steps));
-
-    return this;
-  }
-
-  connect<P = any, Q = any>(path: string, ...steps: CallBack<P, Q>[]) {
-    this.#routesTable.push(new Route(HTTP_METHOD.CONNECT, path, steps));
-
-    return this;
-  }
-
   async run(addr: string | HTTPOptions, cb?: () => void) {
     this.compileRouteTree();
     cb && cb();
 
     for await (const req of this.#server(addr)) {
+      // Ignore /favicon.ico
       if (req.url === "/favicon.ico") {
-        // Ignore /favicon.ico
         req.respond({
           status: 404,
           body: `${req.method} ${req.url} 404 (Not Found)`,

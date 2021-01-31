@@ -1,4 +1,4 @@
-# **_Ant_**
+# **Ant** _v0.2.0_
 
 Fast, simple and versatile web server framework.
 
@@ -7,7 +7,7 @@ Fast, simple and versatile web server framework.
 
 # Table Of Contents
 
-- [**_Ant_**](#ant)
+- [**Ant** _v0.2.0_](#ant-v020)
 - [Table Of Contents](#table-of-contents)
 - [**About**](#about)
   - [The Goal](#the-goal)
@@ -42,6 +42,8 @@ Fast, simple and versatile web server framework.
 # **About**
 
 **Ant** is a web server framework wrapping around the standart Deno http library with zero 3rd party dependencies.
+
+This project is under MIT license, you can view it [here](LICENSE.md).
 
 ## The Goal
 

@@ -1,12 +1,15 @@
 import { Response } from "https://deno.land/std@0.83.0/http/server.ts";
-import { Cookie, setCookie } from "https://deno.land/std@0.83.0/http/cookie.ts";
+import {
+  Cookie,
+  deleteCookie,
+  setCookie,
+} from "https://deno.land/std@0.83.0/http/cookie.ts";
+import { CONTENT_TYPES } from "./constants.ts";
 
 export class ResponseCtx {
   #data: Response;
 
   #headers: Headers = new Headers();
-
-  #meta: Object = {};
 
   #done: boolean;
 
@@ -17,33 +20,40 @@ export class ResponseCtx {
 
   status(code: number) {
     this.#data.status = code;
-    return this;
+    return { send: (d: Uint8Array | Deno.Reader | string) => this.send(d) };
   }
 
-  cookie(c: Cookie) {
-    setCookie(this.#data, c);
-    return this;
+  get cookies() {
+    const set = (c: Cookie) => setCookie(this.#data, c);
+    const del = (name: string) => deleteCookie(this.#data, name);
+
+    return { set, delete: del };
   }
 
-  set(...headers: [string, string][]) {
-    for (const [k, v] of headers) {
-      this.#headers.set(k, v);
-    }
-
-    return this;
+  get headers() {
+    return this.#headers;
   }
 
   send(d: Uint8Array | Deno.Reader | string) {
-    this.#done = true;
-
     this.#data.headers = this.#headers;
     this.#data.body = d;
 
-    const json = () => this.#headers.set("content-type", "application/json");
-    const text = () => this.#headers.set("content-type", "text/plain");
+    this.#done = true;
+
+    const json = () =>
+      this.#headers.set("content-type", CONTENT_TYPES.APPLICATION_JSON);
+
+    const text = () =>
+      this.#headers.set("content-type", CONTENT_TYPES.TEXT_PLAIN);
+
+    const html = () =>
+      this.#headers.set("content-type", CONTENT_TYPES.TEXT_HTML);
+
+    const xml = () => this.#headers.set("content-type", CONTENT_TYPES.TEXT_XML);
+
     const type = (contentType: string) =>
       this.#headers.set("content-type", contentType);
 
-    return { json, text, type };
+    return { json, text, type, html, xml };
   }
 }
