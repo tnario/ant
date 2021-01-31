@@ -3,6 +3,7 @@
 Fast, simple and versatile web server framework.
 
 > NOTE: This is NOT production ready yet!
+> Test it out and give me some feedback :)
 
 # Table Of Contents
 
