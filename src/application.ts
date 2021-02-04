@@ -1,20 +1,20 @@
 import {
   HTTPOptions,
+  HTTPSOptions,
   Response,
   serve,
   Server,
+  serveTLS,
 } from "https://deno.land/std@0.83.0/http/server.ts";
 import { Router } from "./router.ts";
-import { Route, RouteBuilder, RouteNode } from "./containers.ts";
+import { RouteBuilder, RouteNode } from "./containers.ts";
 import { parseQueryString, parseRoute } from "./utilities.ts";
 import { CallBack, ErrorCallBack, RouteData } from "./types.ts";
 import { RequestCtx } from "./request.ts";
 import { ResponseCtx } from "./response.ts";
 
 export class Application extends RouteBuilder {
-  #server: (addr: string | HTTPOptions) => Server = serve;
   #routeTree: Record<string, RouteNode> = {};
-  #routesTable: Route[] = [];
   #appMiddleware: CallBack[] = [];
   #routerMiddleware: CallBack[] = [];
   #errorHandlers: ErrorCallBack[] = [];
@@ -23,11 +23,13 @@ export class Application extends RouteBuilder {
     super();
   }
 
-  mount(path: string, router: Router) {
-    this.#routerMiddleware.push(...router._middleware);
-    for (const route of router._routes) {
-      route.path = path + route.path;
-      this.#routesTable.push(route);
+  group(path: string, ...routers: Router[]) {
+    for (const router of routers) {
+      this.#routerMiddleware.push(...router._middleware);
+      for (const route of router._routes) {
+        route.path = path + route.path;
+        this.routesTable.push(route);
+      }
     }
   }
 
@@ -36,7 +38,7 @@ export class Application extends RouteBuilder {
   }
 
   private compileRouteTree() {
-    for (const route of this.#routesTable) {
+    for (const route of this.routesTable) {
       if (!(route.method in this.#routeTree)) {
         this.#routeTree[route.method] = new RouteNode();
       }
@@ -108,11 +110,26 @@ export class Application extends RouteBuilder {
     this.#errorHandlers.push(...steps);
   }
 
-  async run(addr: string | HTTPOptions, cb?: () => void) {
-    this.compileRouteTree();
+  async runHTTP(addr: string | HTTPOptions, cb?: () => void) {
     cb && cb();
 
-    for await (const req of this.#server(addr)) {
+    const server = serve(addr);
+
+    await this.runServer(server);
+  }
+
+  async runHTTPS(addr: HTTPSOptions, cb?: () => void) {
+    cb && cb();
+
+    const server = serveTLS(addr);
+
+    await this.runServer(server);
+  }
+
+  private async runServer(server: Server) {
+    this.compileRouteTree();
+
+    for await (const req of server) {
       // Ignore /favicon.ico
       if (req.url === "/favicon.ico") {
         req.respond({

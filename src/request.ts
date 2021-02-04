@@ -27,6 +27,22 @@ export class RequestCtx<
     return { set, get };
   }
 
+  get ip() {
+    return (this.#serverRequest.conn.remoteAddr as Deno.NetAddr).hostname;
+  }
+
+  get proto() {
+    return this.#serverRequest.proto;
+  }
+
+  get protoMajor() {
+    return this.#serverRequest.protoMajor;
+  }
+
+  get protoMinor() {
+    return this.#serverRequest.protoMinor;
+  }
+
   get url() {
     return this.#serverRequest.url;
   }

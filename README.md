@@ -1,4 +1,4 @@
-# **Ant** _v0.2.0_
+# Ant v0.3.0
 
 Fast, simple and versatile web server framework.
 
@@ -7,11 +7,11 @@ Fast, simple and versatile web server framework.
 
 # Table Of Contents
 
-- [**Ant** _v0.2.0_](#ant-v020)
+- [Ant v0.3.0](#ant-v030)
 - [Table Of Contents](#table-of-contents)
-- [**About**](#about)
+- [About](#about)
   - [The Goal](#the-goal)
-- [**Guide**](#guide)
+- [Guide](#guide)
   - [Hello World](#hello-world)
   - [Using Routers](#using-routers)
   - [Route Workflow](#route-workflow)
@@ -19,27 +19,31 @@ Fast, simple and versatile web server framework.
   - [Error handling](#error-handling)
     - [Throwing Errors](#throwing-errors)
     - [Defining Error Handling Process](#defining-error-handling-process)
-- [**API Reference**](#api-reference)
+- [API Reference](#api-reference)
   - [Application](#application)
-    - [`Application.METHOD`](#applicationmethodpath-string-steps-callback)
-    - [`Application.mount(path: string, router: Router)`](#applicationmountpath-string-router-router)
-    - [`Application.error(...handlers)`](#applicationerrorhandlers)
-    - [`Application.use(...handlers)`](#applicationusehandlers)
-    - [`Application.run(addr: string | HTTPOptions, cb?: () => void)`](#applicationrunaddr-string--httpoptions-cb---void)
+    - [Application.METHOD(path: string, ...steps: Callback[])](#applicationmethodpath-string-steps-callback)
+    - [Application.group(path: string, router: Router)](#applicationgrouppath-string-router-router)
+    - [Application.error(...handlers)](#applicationerrorhandlers)
+    - [Application.use(...handlers)](#applicationusehandlers)
+    - [Application.runHTTP(addr: string | HTTPOptions, cb?: () => void)](#applicationrunhttpaddr-string--httpoptions-cb---void)
+    - [Application.runHTTPS(addr: HTTPSOptions, cb?: () => void)](#applicationrunhttpsaddr-httpsoptions-cb---void)
   - [Router](#router)
-    - [`Router.METHOD`](#routermethodpath-string-callback)
+    - [Router.METHOD(path: string, ...Callback[])](#routermethodpath-string-callback)
   - [RequestCtx](#requestctx)
-    - [**_url: string_**](#url-string)
-    - [**_method: string_**](#method-string)
-    - [**_headers: string_**](#headers-string)
-    - [**_body_**](#body)
+    - [get url(): string](#get-url-string)
+    - [get method(): string](#get-method-string)
+    - [get ip(): string](#get-ip-string)
+    - [get headers(): Header](#get-headers-header)
+    - [get body()](#get-body)
   - [ResponseCtx](#responsectx)
     - [_status(code: number)_](#statuscode-number)
     - [_set(...headers: string, string)_](#setheaders-string-string)
-    - [_cookie(c: Cookie)_](#cookiec-cookie)
-    - [_send(d: Uint8Array | Deno.Reader | string)_](#sendd-uint8array--denoreader--string)
+    - [_get cookies()_](#get-cookies)
+      - [set(c: Cookie): void](#setc-cookie-void)
+      - [delete(name: string): void](#deletename-string-void)
+    - [send(d: Uint8Array | Deno.Reader | string)](#sendd-uint8array--denoreader--string)
 
-# **About**
+# About
 
 **Ant** is a web server framework wrapping around the standart Deno http library with zero 3rd party dependencies.
 
@@ -49,11 +53,11 @@ This project is under MIT license, you can view it [here](LICENSE.md).
 
 To provide a framework that gives full control of the application state to the developer, has a wide range of standartized tools and a simple to use interface for building complex web apps.
 
-# **Guide**
+# Guide
 
 ## Hello World
 
-Import and create an instance of `Application`. Define the routes using `Application.[METHOD]` and run your web application with `Application.run`
+Import and create an instance of `Application`. Define the routes using `Application.[METHOD]` and run your web application with `Application.runHTTP` or `Application.runHTTPS`.
 
 ```ts
 import { Application } from "https://deno.land/x/ant@v0.1.1/mod.ts";
@@ -72,14 +76,14 @@ app.get(
   }
 );
 
-app.run({ port: 8000 }, () => {
+app.runHTTP({ port: 8000 }, () => {
   console.log("Listening on port 8000");
 });
 ```
 
 ## Using Routers
 
-When building a large web app, having your routes defined in one place is redundant. To break up and/or group your routes, use `Router` and then mount it to the `Application` by using `Application.mount`
+When building a large web app, having your routes defined in one place is redundant. To break up and/or group your routes, use `Router` and then mount it to the `Application` by using `Application.group`
 
 ```ts
 // router.ts
@@ -111,7 +115,7 @@ import router from "./router.ts";
 
 const app = new Application();
 
-app.mount("/", router);
+app.group("/", router);
 
 app.run({ port: 8000 }, () => {
   console.log("Listening on port 8000");
@@ -132,7 +136,7 @@ P - corresponds to `RequestCtx.params` types.
 
 Q - corresponds to `RequestCtx.query` types.
 
-B - corresponds to `RequestCtx.body` types.
+B - corresponds to `RequestCtx.body` types (_only works when body is in JSON format_)
 
 ```ts
 type ReqParams = {
@@ -211,43 +215,49 @@ app.error(
 );
 ```
 
-# **API Reference**
+# API Reference
 
 ## Application
 
-### `Application.[METHOD](path: string, ...steps: Callback[])`
+### Application.METHOD(path: string, ...steps: Callback[])
 
 Defines a HTTP route, where `METHOD` is one of supported HTTP methods
 
 ---
 
-### `Application.mount(path: string, router: Router)`
+### Application.group(path: string, router: Router)
 
 Mounts `Router` and its contents to the `Application`.
 
 ---
 
-### `Application.error(...handlers)`
+### Application.error(...handlers)
 
 Used to define the error handling process.
 
 ---
 
-### `Application.use(...handlers)`
+### Application.use(...handlers)
 
 Used to define Application-Level handlers.
 
 ---
 
-### `Application.run(addr: string | HTTPOptions, cb?: () => void)`
+### Application.runHTTP(addr: string | HTTPOptions, cb?: () => void)
 
-Starts the web server process with the specified address `addr` and an optional callback `cb` function that is executed before the web server process.
+Starts a **HTTP** web server process with the specified address `addr` and an optional callback `cb` function, that is executed before the web server process.
+
+---
+
+### Application.runHTTPS(addr: HTTPSOptions, cb?: () => void)
+
+Starts a **HTTPS** web server process with the specified address `addr` and an optional callback `cb` function, that is executed before the web server process.
 
 ---
 
 ## Router
 
-### `Router.[METHOD](path: string, ...Callback[])`
+### Router.METHOD(path: string, ...Callback[])
 
 Defines a HTTP route, where `METHOD` is one of HTTP methods (GET, POST, DELETE, PUT, ...)
 
@@ -257,7 +267,7 @@ Holds information about the incoming request.
 
 **The supported properties of `RequestCtx` are:**
 
-### **_url: string_**
+### get url(): string
 
 `RequestCtx.url` returns a string that represents the endpoint of a request.
 
@@ -271,19 +281,25 @@ http://localhost:8000/customers
 
 ---
 
-### **_method: string_**
+### get method(): string
 
 `RequestCtx.method` returns a string that represents the HTTP method that was used for the request.
 
 ---
 
-### **_headers: string_**
+### get ip(): string
+
+`RequestCtx.ip` returns a string that represents the IP address of the server.
+
+---
+
+### get headers(): Header
 
 `RequestCtx.headers` returns a `Header` object which holds and/or manipulates the headers of a request.
 
 ---
 
-### **_body_**
+### get body()
 
 `RequestCtx.body` contains key-value pairs of data that was submitted in the request. The `RequestCtx.body` returns getter properties that return the `body` of the request in a specific format. The supporter formats are:
 
@@ -311,20 +327,30 @@ Sets headers of the response.
 
 ---
 
-### _cookie(c: Cookie)_
+### _get cookies()_
 
-Sets a cookie to the response object.
+Returns two methods for setting and deleting cookies.
+
+#### set(c: Cookie): void
+
+Set a cookie to the response.
+
+#### delete(name: string): void
+
+Deletes a cookie from the response by specifying the `name` of the cookie.
 
 ---
 
-### _send(d: Uint8Array | Deno.Reader | string)_
+### send(d: Uint8Array | Deno.Reader | string)
 
-Sets the response `body` and sends it to the client. To send the response body in a specific format `.send()` exports few methods for that:
+Sets the response `body` and sends it to the client. To send the response body with a specific `"Content-Type"`, `.send()` exports few methods for that:
 
 | Method                    | Description                                      |
 | ------------------------- | ------------------------------------------------ |
 | json()                    | Sets `content-type` header to `application/json` |
 | text()                    | Sets `content-type` header to `text/plain`       |
+| html()                    | Sets `content-type` header to `text/html`        |
+| xml()                     | Sets `content-type` header to `text/xml`         |
 | type(contentType: string) | Sets `content-type` header to `contentType`      |
 
 ---
