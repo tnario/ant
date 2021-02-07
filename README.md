@@ -1,13 +1,13 @@
-# Ant v0.3.0
+# Ant v0.4.0
 
-Fast, simple and versatile web server framework.
+simple and versatile web server framework.
 
 > NOTE: This is NOT production ready yet!
 > Test it out and give me some feedback :)
 
 # Table Of Contents
 
-- [Ant v0.3.0](#ant-v030)
+- [Ant v0.4.0](#ant-v040)
 - [Table Of Contents](#table-of-contents)
 - [About](#about)
   - [The Goal](#the-goal)

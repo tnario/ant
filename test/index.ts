@@ -15,7 +15,7 @@ app.get("/hello", async (req, res) => {
   const h = { g: 987, uu: "hjggj" };
 
   res.send(JSON.stringify(h)).json();
-  console.log(res.headers.values());
+  console.log(res.headers);
 });
 
 app.runHTTP({ port: 8000 }, () => {

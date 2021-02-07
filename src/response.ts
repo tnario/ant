@@ -14,6 +14,7 @@ export class ResponseCtx extends HeaderFactory {
 
   constructor(done_sig: boolean, init?: Response) {
     super();
+
     this.#data = init || {};
 
     // Set default response headers

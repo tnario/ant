@@ -13,28 +13,28 @@ export class HeaderFactory {
   }
 
   get bodyInformation() {
-    const contentLength = (length: string) => {
-      this.h.set("Content-Length", length);
+    const contentLength = (value: string) => {
+      this.h.set("Content-Length", value);
       return this.bodyInformation;
     };
 
-    const contentType = (type: string) => {
-      this.h.set("Content-Type", type);
+    const contentType = (value: string) => {
+      this.h.set("Content-Type", value);
       return this.bodyInformation;
     };
 
-    const contentEncoding = (encoding: string) => {
-      this.h.set("Content-Encoding", encoding);
+    const contentEncoding = (value: string) => {
+      this.h.set("Content-Encoding", value);
       return this.bodyInformation;
     };
 
-    const contentLanguage = (lang: string) => {
-      this.h.set("Content-Language", lang);
+    const contentLanguage = (value: string) => {
+      this.h.set("Content-Language", value);
       return this.bodyInformation;
     };
 
-    const contentLocation = (location: string) => {
-      this.h.set("Content-Location", location);
+    const contentLocation = (value: string) => {
+      this.h.set("Content-Location", value);
       return this.bodyInformation;
     };
 
