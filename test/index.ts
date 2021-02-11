@@ -1,23 +1,30 @@
-import { Application, Router } from "../mod.ts";
+import { Application, Router, ConnectionManagmentHeaders } from "../mod.ts";
 
 const app = new Application();
 const router = new Router();
 
-app.use(async (req) => {
-  console.log(req.ip);
+router.use(async (req, res) => {
+  console.log("router-level handler");
 });
 
-app.get("/hello", async (req, res) => {
-  res.connectionManagment
-    .connection("keep-alive")
-    .keepAlive("timeout=5, max=1000");
-
-  const h = { g: 987, uu: "hjggj" };
-
-  res.send(JSON.stringify(h)).json();
-  console.log(res.headers);
+app.use(async (req, res) => {
+  console.log("app-level handler");
 });
+
+router.get(
+  "/",
+  async (req, res, err) => {
+    console.log("route-level handler");
+  },
+  async (req, res) => {
+    const doc = await Deno.readFile("./test/doc.html");
+
+    res.status(200).send(doc).html();
+  }
+);
+
+app.group("/", router);
 
 app.runHTTP({ port: 8000 }, () => {
-  console.log("http://localhost:8000");
+  console.log("Listening on port 8000");
 });

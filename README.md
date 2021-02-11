@@ -1,6 +1,6 @@
 # Ant v0.4.0
 
-simple and versatile web server framework.
+simple and versatile server-side web framework.
 
 > NOTE: This is NOT production ready yet!
 > Test it out and give me some feedback :)

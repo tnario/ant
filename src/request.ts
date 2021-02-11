@@ -12,12 +12,14 @@ export class RequestCtx<
 > {
   params: P;
   query: Q;
+  #body: Uint8Array;
   #serverRequest: ServerRequest;
 
-  constructor(req: ServerRequest, params: P, query: Q) {
+  constructor(req: ServerRequest, params: P, query: Q, b: Uint8Array) {
     this.#serverRequest = req;
     this.params = params;
     this.query = query;
+    this.#body = b;
   }
 
   get cookies() {
@@ -58,23 +60,11 @@ export class RequestCtx<
   get body() {
     const decoder = new TextDecoder();
 
-    const getJson = async (): Promise<B> => {
-      const buffer = await Deno.readAll(this.#serverRequest.body);
+    const getJson = (): B => JSON.parse(decoder.decode(this.#body));
 
-      return JSON.parse(decoder.decode(buffer));
-    };
+    const getText = () => decoder.decode(this.#body);
 
-    const getText = async () => {
-      const buffer = await Deno.readAll(this.#serverRequest.body);
-
-      return decoder.decode(buffer);
-    };
-
-    const getRaw = async () => {
-      const buffer = await Deno.readAll(this.#serverRequest.body);
-
-      return buffer;
-    };
+    const getRaw = () => this.#body;
 
     return {
       get json() {

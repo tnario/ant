@@ -14,7 +14,7 @@ export type CallBack<P = any, Q = any, B = any> = (
   req: RequestCtx<P, Q, B>,
   res: ResponseCtx,
   error: ErrorFn
-) => Promise<void>;
+) => Promise<any | void>;
 
 export type ErrorCallBack<P = any, Q = any, B = any> = (
   err: any,
@@ -23,6 +23,7 @@ export type ErrorCallBack<P = any, Q = any, B = any> = (
 ) => Promise<void>;
 
 export type RouteData = {
+  routerPath?: string;
   callbacks: CallBack[];
   params: Record<string, string>;
   query: Record<string, string>;

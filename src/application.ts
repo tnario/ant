@@ -16,7 +16,7 @@ import { ResponseCtx } from "./response.ts";
 export class Application extends RouteBuilder {
   #routeTree: Record<string, RouteNode> = {};
   #appMiddleware: CallBack[] = [];
-  #routerMiddleware: CallBack[] = [];
+  #routerMiddleware: { [key: string]: CallBack[] } = {};
   #errorHandlers: ErrorCallBack[] = [];
 
   constructor() {
@@ -25,9 +25,11 @@ export class Application extends RouteBuilder {
 
   group(path: string, ...routers: Router[]) {
     for (const router of routers) {
-      this.#routerMiddleware.push(...router._middleware);
+      this.#routerMiddleware[path] = router._middleware;
       for (const route of router._routes) {
         route.path = path + route.path;
+        route.routerPath = path;
+
         this.routesTable.push(route);
       }
     }
@@ -59,7 +61,8 @@ export class Application extends RouteBuilder {
 
       node.children[pathSegments[lastIndex]] = new RouteNode(
         route.callbacks,
-        paramMap
+        paramMap,
+        route.routerPath
       );
     }
   }
@@ -100,6 +103,7 @@ export class Application extends RouteBuilder {
     }
 
     return {
+      routerPath: node.routerPath,
       callbacks: node.callbacks,
       params,
       query: queryString ? parseQueryString(queryString) : {},
@@ -149,13 +153,20 @@ export class Application extends RouteBuilder {
         continue;
       }
 
-      const { callbacks, params, query } = routeNode;
+      const { callbacks, params, query, routerPath } = routeNode;
 
-      const requestCtx = new RequestCtx(req, params, query);
+      const bodyBuf = await Deno.readAll(req.body);
+
+      const requestCtx = new RequestCtx(req, params, query, bodyBuf);
+
+      let routerHandlers: CallBack[] = [];
+      if (routerPath && this.#routerMiddleware[routerPath] !== undefined) {
+        routerHandlers = this.#routerMiddleware[routerPath];
+      }
 
       const callbackStack = [
         ...this.#appMiddleware, // Application-Level
-        ...this.#routerMiddleware, // Router-Level
+        ...routerHandlers, // Router-Level
         ...callbacks, // Route-Level
       ];
 
@@ -174,11 +185,12 @@ export class Application extends RouteBuilder {
       };
 
       // Process incoming request
-      for (const cb of callbackStack) {
+      let r;
+      for (let i = 0; i < callbackStack.length && r === undefined; i++) {
         try {
           if (DONE) break;
 
-          await cb(requestCtx, responseCtx, errorFn);
+          r = await callbackStack[i](requestCtx, responseCtx, errorFn);
         } catch (e) {
           error = e;
           break;

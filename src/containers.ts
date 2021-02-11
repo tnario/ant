@@ -5,6 +5,7 @@ export class Route {
   method: string;
   path: string;
   callbacks: CallBack[];
+  routerPath: string | undefined;
 
   constructor(method: string, path: string, callbacks: CallBack[]) {
     this.method = method;
@@ -16,11 +17,17 @@ export class Route {
 export class RouteNode {
   children: Record<string, RouteNode> = {};
   callbacks: CallBack[];
+  routerPath: string | undefined;
   params: Record<number, string>;
 
-  constructor(callbacks?: CallBack[], params?: Record<number, string>) {
+  constructor(
+    callbacks?: CallBack[],
+    params?: Record<number, string>,
+    routerPath?: string
+  ) {
     this.callbacks = callbacks || [];
     this.params = params || {};
+    this.routerPath = routerPath;
   }
 }
 
