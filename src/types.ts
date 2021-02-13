@@ -1,6 +1,6 @@
 import { ServerRequest } from "https://deno.land/std@0.83.0/http/server.ts";
-import { RequestCtx } from "./request.ts";
-import { ResponseCtx } from "./response.ts";
+import { RequestContext } from "./request.ts";
+import { ResponseContext } from "./response.ts";
 
 export type ErrorFn = (err: any) => Promise<void> | void;
 
@@ -11,15 +11,15 @@ export type Context = {
 };
 
 export type CallBack<P = any, Q = any, B = any> = (
-  req: RequestCtx<P, Q, B>,
-  res: ResponseCtx,
+  req: RequestContext<P, Q, B>,
+  res: ResponseContext,
   error: ErrorFn
-) => Promise<any | void>;
+) => Promise<void>;
 
 export type ErrorCallBack<P = any, Q = any, B = any> = (
   err: any,
-  req: RequestCtx<P, Q, B>,
-  res: ResponseCtx
+  req: RequestContext<P, Q, B>,
+  res: ResponseContext
 ) => Promise<void>;
 
 export type RouteData = {

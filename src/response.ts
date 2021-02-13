@@ -4,94 +4,59 @@ import {
   deleteCookie,
   setCookie,
 } from "https://deno.land/std@0.83.0/http/cookie.ts";
-import {
-  ANT_VERSION,
-  BodyInformationHeaders,
-  ContentTypes,
-} from "./constants.ts";
-import { HeaderController } from "./headers.ts";
 
-export class ResponseCtx extends HeaderController {
-  #data: Response;
-
-  #done: boolean;
-
-  constructor(done_sig: boolean, init?: Response) {
-    super();
-
-    this.#data = init || {};
-    this.#data.headers = this.h;
-
-    // Set default response headers
-    this.h.set("Server", ANT_VERSION);
-
-    this.#done = done_sig;
-  }
-
-  status(code: number) {
-    this.#data.status = code;
-    return {
-      send: (d: Uint8Array | Deno.Reader | string) => this.send(d),
-      redirect: (to: string) => this.redirect(to),
-    };
-  }
-
-  get cookie() {
-    const set = (c: Cookie) => setCookie(this.#data, c);
-    const del = (name: string) => deleteCookie(this.#data, name);
-
-    return { set, delete: del };
-  }
-
-  private redirect(to: string) {
-    this.#done = true;
-    this.h.set("Location", to);
-  }
-
-  private send(d: Uint8Array | Deno.Reader | string) {
-    // Set response date
-    this.h.set("Date", new Date().toUTCString());
-
-    this.#data.body = d;
-
-    this.#done = true;
-
-    const json = () =>
-      this.h.set(
-        BodyInformationHeaders.contentType,
-        ContentTypes.applicationJson
-      );
-
-    const text = () =>
-      this.h.set(BodyInformationHeaders.contentType, ContentTypes.textPlain);
-
-    const html = () =>
-      this.h.set(BodyInformationHeaders.contentType, ContentTypes.textHtml);
-
-    const xml = () =>
-      this.h.set(BodyInformationHeaders.contentType, ContentTypes.textXml);
-
-    const type = (contentType: string) =>
-      this.h.set(BodyInformationHeaders.contentType, contentType);
-
-    return { json, text, type, html, xml };
-  }
+export interface ResponseContext {
+  headers: Headers;
+  body: (d: Uint8Array | Deno.Reader | string) => void;
+  redirect: (to: string, status: number) => void;
+  send: (status?: number) => void;
+  cookie: {
+    set: (c: Cookie) => void;
+    delete: (name: string) => void;
+  };
 }
 
-export function headers(res: Response) {
-  if (res.headers === undefined) {
-    res.headers = new Headers();
+export function createResponseContext(
+  resRef: Response,
+  done: boolean
+): ResponseContext {
+  const headers = new Headers();
+  resRef.headers = headers;
+
+  function body(d: Uint8Array | Deno.Reader | string) {
+    resRef.body = d;
   }
 
-  function set([name, value]: [string, string]) {
-    res.headers?.set(name, value);
-    return headers(res);
+  function redirect(to: string, status: number) {
+    if (!(status >= 300 && status < 400)) {
+      throw new Error("Status code has to be 3xx!");
+    }
+
+    resRef.status = status;
+    headers.set("Location", to);
+
+    done = true;
   }
 
-  function del(name: string) {
-    res.headers?.delete(name);
-    return headers(res);
+  function send(status?: number) {
+    status && (resRef.status = status);
+    done = true;
   }
 
-  return { set, delete: del };
+  return {
+    get headers() {
+      return headers;
+    },
+
+    get cookie() {
+      return {
+        set: (c: Cookie) => setCookie(resRef, c),
+        delete: (name: string) => deleteCookie(resRef, name),
+      };
+    },
+
+    body,
+    send,
+    redirect,
+  };
 }

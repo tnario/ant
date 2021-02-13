@@ -1,4 +1,4 @@
-import { HTTP_METHOD } from "./constants.ts";
+import { HttpMethod } from "./constants.ts";
 import { CallBack } from "./types.ts";
 
 export class Route {
@@ -31,62 +31,105 @@ export class RouteNode {
   }
 }
 
-export class RouteBuilder {
-  protected routesTable: Route[] = [];
+export interface RouteController {
+  get: <P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) => void;
+  post: <P = any, Q = any, B = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q, B>[]
+  ) => void;
+  delete: <P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) => void;
+  put: <P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) => void;
+  options: <P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) => void;
+  patch: <P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) => void;
+  head: <P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) => void;
+  trace: <P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) => void;
+  connect: <P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) => void;
+}
 
-  constructor() {}
+export function createRouteController() {
+  const routesTable: Route[] = [];
 
-  get<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.GET, path, callbacks));
-
-    return this;
+  function get<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    routesTable.push(new Route(HttpMethod.GET, path, callbacks));
   }
 
-  post<P = any, Q = any, B = any>(
+  function post<P = any, Q = any, B = any>(
     path: string,
     ...callbacks: CallBack<P, Q, B>[]
   ) {
-    this.routesTable.push(new Route(HTTP_METHOD.POST, path, callbacks));
-
-    return this;
+    routesTable.push(new Route(HttpMethod.POST, path, callbacks));
   }
-  delete<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.DELETE, path, callbacks));
-
-    return this;
+  function del<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    routesTable.push(new Route(HttpMethod.DELETE, path, callbacks));
   }
-  put<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.PUT, path, callbacks));
-
-    return this;
+  function put<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
+    routesTable.push(new Route(HttpMethod.PUT, path, callbacks));
   }
-  options<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.OPTIONS, path, callbacks));
-
-    return this;
+  function options<P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) {
+    routesTable.push(new Route(HttpMethod.OPTIONS, path, callbacks));
   }
 
-  patch<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.PATCH, path, callbacks));
-
-    return this;
+  function patch<P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) {
+    routesTable.push(new Route(HttpMethod.PATCH, path, callbacks));
   }
 
-  head<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.HEAD, path, callbacks));
-
-    return this;
+  function head<P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) {
+    routesTable.push(new Route(HttpMethod.HEAD, path, callbacks));
   }
 
-  trace<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.TRACE, path, callbacks));
-
-    return this;
+  function trace<P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) {
+    routesTable.push(new Route(HttpMethod.TRACE, path, callbacks));
   }
 
-  connect<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
-    this.routesTable.push(new Route(HTTP_METHOD.CONNECT, path, callbacks));
-
-    return this;
+  function connect<P = any, Q = any>(
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) {
+    routesTable.push(new Route(HttpMethod.CONNECT, path, callbacks));
   }
+
+  return {
+    routesTable,
+    routeController: {
+      get,
+      post,
+      delete: del,
+      put,
+      options,
+      patch,
+      head,
+      trace,
+      connect,
+    },
+  };
 }

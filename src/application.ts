@@ -7,45 +7,62 @@ import {
   serveTLS,
 } from "https://deno.land/std@0.83.0/http/server.ts";
 import { Router } from "./router.ts";
-import { RouteBuilder, RouteNode } from "./containers.ts";
+import {
+  createRouteController,
+  RouteController,
+  RouteNode,
+} from "./containers.ts";
 import { parseQueryString, parseRoute } from "./utilities.ts";
-import { CallBack, ErrorCallBack, RouteData } from "./types.ts";
-import { RequestCtx } from "./request.ts";
-import { ResponseCtx } from "./response.ts";
+import { CallBack, ErrorCallBack } from "./types.ts";
+import { createRequestContext } from "./request.ts";
+import { createResponseContext } from "./response.ts";
 
-export class Application extends RouteBuilder {
-  #routeTree: Record<string, RouteNode> = {};
-  #appMiddleware: CallBack[] = [];
-  #routerMiddleware: { [key: string]: CallBack[] } = {};
-  #errorHandlers: ErrorCallBack[] = [];
+export interface Application extends RouteController {
+  group: (path: string, ...routers: Router[]) => void;
+  use: (...middleware: CallBack[]) => void;
+  error: (...steps: ErrorCallBack[]) => void;
+  listenHTTP: (addr: string | HTTPOptions, cb?: () => void) => Promise<void>;
+  listenHTTPS: (addr: HTTPSOptions, cb?: () => void) => Promise<void>;
+}
 
-  constructor() {
-    super();
-  }
+export function createApplication(): Application {
+  const routeTree: Record<string, RouteNode> = {};
+  const appHandlers: CallBack[] = [];
+  const routerHandlerMap: Record<string, CallBack[]> = {};
+  const errorHandlers: ErrorCallBack[] = [];
+  const { routesTable, routeController } = createRouteController();
 
-  group(path: string, ...routers: Router[]) {
+  function group(path: string, ...routers: Router[]) {
     for (const router of routers) {
-      this.#routerMiddleware[path] = router._middleware;
+      if (!(path in routerHandlerMap)) {
+        routerHandlerMap[path] = [];
+      }
+      routerHandlerMap[path].push(...router._middleware);
       for (const route of router._routes) {
         route.path = path + route.path;
         route.routerPath = path;
-
-        this.routesTable.push(route);
+        routesTable.push(route);
       }
     }
   }
 
-  use(...middleware: CallBack[]) {
-    return this.#appMiddleware.push(...middleware);
+  function use(...middleware: CallBack[]) {
+    appHandlers.push(...middleware);
   }
 
-  private compileRouteTree() {
-    for (const route of this.routesTable) {
-      if (!(route.method in this.#routeTree)) {
-        this.#routeTree[route.method] = new RouteNode();
+  function error(...steps: ErrorCallBack[]) {
+    errorHandlers.push(...steps);
+  }
+
+  // private
+  async function runServer(server: Server) {
+    // 1. generate route tree
+    for (const route of routesTable) {
+      if (!(route.method in routeTree)) {
+        routeTree[route.method] = new RouteNode();
       }
 
-      let node = this.#routeTree[route.method];
+      let node = routeTree[route.method];
       const [pathSegments, paramMap] = parseRoute(route.path);
       const lastIndex = pathSegments.length - 1;
 
@@ -65,76 +82,10 @@ export class Application extends RouteBuilder {
         route.routerPath
       );
     }
-  }
 
-  private getRoute(method: string, url: string): RouteData | undefined {
-    if (!(method in this.#routeTree)) {
-      return undefined;
-    }
-
-    const [route, queryString] = url.split("?");
-    const pathSegments = ["/", ...route.split("/").filter((x) => x !== "")];
-
-    let node = this.#routeTree[method];
-    const paramIndexes: number[] = [];
-
-    for (let i = 0; i < pathSegments.length; i++) {
-      const seg = pathSegments[i];
-
-      if ("*" in node.children) {
-        node = node.children["*"];
-        paramIndexes.push(i);
-        continue;
-      } else if (!(seg in node.children)) {
-        return undefined;
-      }
-
-      node = node.children[seg];
-    }
-
-    // Check if route was registered
-    if (node.callbacks.length === 0) {
-      return undefined;
-    }
-
-    const params: Record<string, string> = {};
-    for (const i of paramIndexes) {
-      params[node.params[i]] = pathSegments[i];
-    }
-
-    return {
-      routerPath: node.routerPath,
-      callbacks: node.callbacks,
-      params,
-      query: queryString ? parseQueryString(queryString) : {},
-    };
-  }
-
-  error(...steps: ErrorCallBack[]) {
-    this.#errorHandlers.push(...steps);
-  }
-
-  async runHTTP(addr: string | HTTPOptions, cb?: () => void) {
-    cb && cb();
-
-    const server = serve(addr);
-
-    await this.runServer(server);
-  }
-
-  async runHTTPS(addr: HTTPSOptions, cb?: () => void) {
-    cb && cb();
-
-    const server = serveTLS(addr);
-
-    await this.runServer(server);
-  }
-
-  private async runServer(server: Server) {
-    this.compileRouteTree();
-
-    for await (const req of server) {
-      // Ignore /favicon.ico
+    // 2. run web server
+    serverLoop: for await (const req of server) {
+      // 2.1 Ignore /favicon.ico
       if (req.url === "/favicon.ico") {
         req.respond({
           status: 404,
@@ -143,62 +94,87 @@ export class Application extends RouteBuilder {
         continue;
       }
 
-      const routeNode = this.getRoute(req.method, req.url);
+      // 2.2 get route and its data from the routeTree
 
-      if (routeNode === undefined) {
+      // 2.2.1 parse the request url
+      const [route, queryString] = req.url.split("?");
+      const pathSegments = ["/", ...route.split("/").filter((x) => x !== "")];
+
+      // 2.2.2 traverse through the routeTree and
+      // find route that was requested
+      let node = routeTree[req.method];
+      const paramIndexes: number[] = [];
+      for (let i = 0; i < pathSegments.length && node !== undefined; i++) {
+        const seg = pathSegments[i];
+
+        if ("*" in node.children) {
+          node = node.children["*"];
+          paramIndexes.push(i);
+          continue;
+        }
+
+        node = node.children[seg];
+      }
+
+      // 2.2.3 if route is non-existing, respond with status 400
+      if (node === undefined || (node && node.callbacks.length === 0)) {
         req.respond({
           status: 400,
           body: `${req.method} ${req.url} 400 (Bad Request)`,
         });
-        continue;
+        continue serverLoop;
       }
 
-      const { callbacks, params, query, routerPath } = routeNode;
+      // 2.2.4 get all required data from requested route
+      const query = queryString ? parseQueryString(queryString) : {};
+      const { callbacks, routerPath } = node;
+      const params: Record<string, string> = {};
+      for (const i of paramIndexes) {
+        params[node.params[i]] = pathSegments[i];
+      }
 
-      const bodyBuf = await Deno.readAll(req.body);
-
-      const requestCtx = new RequestCtx(req, params, query, bodyBuf);
+      const reqCtx = await createRequestContext(req, params, query);
 
       let routerHandlers: CallBack[] = [];
-      if (routerPath && this.#routerMiddleware[routerPath] !== undefined) {
-        routerHandlers = this.#routerMiddleware[routerPath];
+      if (routerPath && routerHandlerMap[routerPath] !== undefined) {
+        routerHandlers = routerHandlerMap[routerPath];
       }
 
       const callbackStack = [
-        ...this.#appMiddleware, // Application-Level
+        ...appHandlers, // Application-Level
         ...routerHandlers, // Router-Level
         ...callbacks, // Route-Level
       ];
 
       let DONE = false;
-      let error;
 
       const responsePayload: Response = {
         // Default response values
         status: 200,
       };
-      const responseCtx = new ResponseCtx(DONE, responsePayload);
 
-      const errorFn = (err: any) => {
-        error = err;
+      const resCtx = createResponseContext(responsePayload, DONE);
+
+      let err;
+      function errorFn(e: any) {
+        err = e;
         DONE = true;
-      };
+      }
 
       // Process incoming request
-      let r;
-      for (let i = 0; i < callbackStack.length && r === undefined; i++) {
+      for (let i = 0; i < callbackStack.length; i++) {
         try {
           if (DONE) break;
 
-          r = await callbackStack[i](requestCtx, responseCtx, errorFn);
+          await callbackStack[i](reqCtx, resCtx, errorFn);
         } catch (e) {
-          error = e;
+          err = e;
           break;
         }
       }
 
       // If no errors, send back the response
-      if (!error) {
+      if (!err) {
         req.respond(responsePayload);
         continue;
       }
@@ -209,14 +185,15 @@ export class Application extends RouteBuilder {
         // Default error response
         status: 500,
       };
-      const errorResponseCtx = new ResponseCtx(ERROR_DONE, errorResponse);
+
+      const errResCtx = createResponseContext(errorResponse, ERROR_DONE);
 
       // Handle the error
-      for (const ecb of this.#errorHandlers) {
+      for (const ecb of errorHandlers) {
         try {
           if (ERROR_DONE) break;
 
-          await ecb(error, requestCtx, errorResponseCtx);
+          await ecb(err, reqCtx, errResCtx);
         } catch (e) {
           console.error(e);
         }
@@ -226,4 +203,29 @@ export class Application extends RouteBuilder {
       req.respond(errorResponse);
     }
   }
+
+  async function listenHTTP(addr: string | HTTPOptions, cb?: () => void) {
+    cb && cb();
+
+    const server = serve(addr);
+
+    await runServer(server);
+  }
+
+  async function listenHTTPS(addr: HTTPSOptions, cb?: () => void) {
+    cb && cb();
+
+    const server = serveTLS(addr);
+
+    await runServer(server);
+  }
+
+  return {
+    listenHTTP,
+    listenHTTPS,
+    group,
+    use,
+    error,
+    ...routeController,
+  };
 }

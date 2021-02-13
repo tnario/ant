@@ -1,81 +1,89 @@
 import { ServerRequest } from "https://deno.land/std@0.83.0/http/server.ts";
-import {
-  Cookie,
-  setCookie,
-  getCookies,
-} from "https://deno.land/std@0.83.0/http/cookie.ts";
+import { getCookies } from "https://deno.land/std@0.83.0/http/cookie.ts";
 
-export class RequestCtx<
+export interface RequestContext<
   P = Record<string, string>,
   Q = Record<string, string>,
   B = any
 > {
   params: P;
   query: Q;
-  #body: Uint8Array;
-  #serverRequest: ServerRequest;
+  body: {
+    json: B;
+    text: string;
+    raw: Uint8Array;
+  };
+  ip: string;
+  proto: string;
+  protoMajor: number;
+  protoMinor: number;
+  cookies: Record<string, string>;
+  url: string;
+  method: string;
+  headers: Headers;
+}
 
-  constructor(req: ServerRequest, params: P, query: Q, b: Uint8Array) {
-    this.#serverRequest = req;
-    this.params = params;
-    this.query = query;
-    this.#body = b;
-  }
+export async function createRequestContext(
+  req: ServerRequest,
+  params: Record<string, string>,
+  query: Record<string, string>
+): Promise<RequestContext> {
+  const rbody = await Deno.readAll(req.body);
 
-  get cookies() {
-    const set = (c: Cookie) => setCookie(this.#serverRequest, c);
-    const get = () => getCookies(this.#serverRequest);
+  const decoder = new TextDecoder();
 
-    return { set, get };
-  }
+  const getJsonBody = (d: Uint8Array): any => JSON.parse(decoder.decode(d));
 
-  get ip() {
-    return (this.#serverRequest.conn.remoteAddr as Deno.NetAddr).hostname;
-  }
+  const getTextBody = (d: Uint8Array) => decoder.decode(d);
 
-  get proto() {
-    return this.#serverRequest.proto;
-  }
+  return {
+    params,
+    query,
 
-  get protoMajor() {
-    return this.#serverRequest.protoMajor;
-  }
+    get ip() {
+      return (req.conn.remoteAddr as Deno.NetAddr).hostname;
+    },
 
-  get protoMinor() {
-    return this.#serverRequest.protoMinor;
-  }
+    get proto() {
+      return req.proto;
+    },
 
-  get url() {
-    return this.#serverRequest.url;
-  }
+    get protoMajor() {
+      return req.protoMajor;
+    },
 
-  get method() {
-    return this.#serverRequest.method;
-  }
+    get protoMinor() {
+      return req.protoMinor;
+    },
 
-  get headers() {
-    return this.#serverRequest.headers;
-  }
+    get cookies() {
+      return getCookies(req);
+    },
 
-  get body() {
-    const decoder = new TextDecoder();
+    get url() {
+      return req.url;
+    },
 
-    const getJson = (): B => JSON.parse(decoder.decode(this.#body));
+    get method() {
+      return req.method;
+    },
 
-    const getText = () => decoder.decode(this.#body);
+    get headers() {
+      return req.headers;
+    },
 
-    const getRaw = () => this.#body;
-
-    return {
-      get json() {
-        return getJson();
-      },
-      get text() {
-        return getText();
-      },
-      get raw() {
-        return getRaw();
-      },
-    };
-  }
+    get body() {
+      return {
+        get json() {
+          return getJsonBody(rbody);
+        },
+        get text() {
+          return getTextBody(rbody);
+        },
+        get raw() {
+          return rbody;
+        },
+      };
+    },
+  };
 }

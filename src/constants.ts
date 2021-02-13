@@ -1,4 +1,4 @@
-export namespace HTTP_METHOD {
+export namespace HttpMethod {
   export const GET = "GET",
     POST = "POST",
     DELETE = "DELETE",
@@ -26,93 +26,72 @@ export namespace ContentTypes {
 
 export const ANT_VERSION = "Ant/0.3.0";
 
-export namespace AuthentificationHeaders {
-  export const wwwAuthenticate = "WWW-Authenticate",
-    authorization = "Authorization",
-    proxyAuthenticate = "Proxy-Authenticate",
-    proxyAuthorization = "Proxy-Authorization";
-}
+export namespace HttpHeaders {
+  export const WWWAuthenticate = "WWW-Authenticate",
+    Authorization = "Authorization",
+    ProxyAuthenticate = "Proxy-Authenticate",
+    ProxyAuthorization = "Proxy-Authorization";
 
-export namespace CachingHeaders {
-  export const age = "Age",
-    cacheControl = "Cache-Control",
-    clearSiteData = "ClearSiteData",
-    expires = "Expires",
-    pragma = "Pragma",
-    warning = "Warning";
-}
+  export const Age = "Age",
+    CacheControl = "Cache-Control",
+    ClearSiteData = "ClearSiteData",
+    Expires = "Expires",
+    Pragma = "Pragma",
+    Warning = "Warning";
 
-export namespace ConditionalsHeaders {
-  export const lastModified = "Last-Modified",
-    etag = "ETag",
-    ifMatch = "If-Match",
-    ifNoneMatch = "If-None-Match",
-    ifModifiedSince = "If-Modified-Since",
-    ifUnmodifiedSince = "If-Unmodified-Since",
-    vary = "Vary";
-}
+  export const LastModified = "Last-Modified",
+    ETag = "ETag",
+    IfMatch = "If-Match",
+    IfNoneMatch = "If-None-Match",
+    IfModifiedSince = "If-Modified-Since",
+    IfUnmodifiedSince = "If-Unmodified-Since",
+    Vary = "Vary";
 
-export namespace ConnectionManagmentHeaders {
-  export const connection = "Connection",
-    keepAlive = "Keep-Alive";
-}
+  export const Connection = "Connection",
+    KeepAlive = "Keep-Alive";
 
-export namespace ContentNegotiationHeaders {
-  export const accept = "Accept",
-    acceptCharset = "Accept-Charset",
-    acceptEncoding = "Accept-Encoding",
-    acceptLanguage = "Accept-Language";
-}
+  export const Accept = "Accept",
+    AcceptCharset = "Accept-Charset",
+    AcceptEncoding = "Accept-Encoding",
+    AcceptLanguage = "Accept-Language";
 
-export namespace ControlsHeaders {
   export const expect = "Expect";
-}
 
-export namespace CookiesHeaders {
-  export const cookie = "Cookie",
-    setCookie = "Set-Cookie";
-}
+  export const Cookie = "Cookie",
+    SetCookie = "Set-Cookie";
 
-export namespace CORSHeaders {
-  export const accessControlAllowOrigin = "Access-Control-Allow-Origin",
-    accessControlAllowCredentials = "Access-Control-Allow-Credentials",
-    accessControlAllowHeaders = "Access-Control-Allow-Headers",
-    accessControlAllowMethods = "Access-Control-Allow-Methods",
-    accessControlExposeHeaders = "Access-Control-Expose-Headers",
-    accessControlMaxAge = "Access-Control-Max-Age",
-    accessControlRequestHeaders = "Access-Control-Request-Headers",
-    accessControlRequestMethod = "Access-Control-Request-Method",
-    origin = "Origin",
-    timingAllowOrigin = "Timing-Allow-Origin";
-}
+  export const ContentLength = "Content-Length",
+    ContentType = "Content-Type",
+    ContentEncoding = "Content-Encoding",
+    ContentLanguage = "Content-Language",
+    ContentLocation = "Content-Location";
 
-export namespace DoNotTrackHeaders {
-  export const dnt = "DNT",
-    tk = "Tk";
-}
+  export const ContentDisposition = "Content-Disposition";
 
-export namespace DownloadsHeaders {
-  export const contentDisposition = "Content-Disposition";
-}
+  export const DNT = "DNT",
+    Tk = "Tk";
 
-export namespace BodyInformationHeaders {
-  export const contentLength = "Content-Length",
-    contentType = "Content-Type",
-    contentEncoding = "Content-Encoding",
-    contentLanguage = "Content-Language",
-    contentLocation = "Content-Location";
+  export const AccessControlAllowOrigin = "Access-Control-Allow-Origin",
+    AccessControlAllowCredentials = "Access-Control-Allow-Credentials",
+    AccessControlAllowHeaders = "Access-Control-Allow-Headers",
+    AccessControlAllowMethods = "Access-Control-Allow-Methods",
+    AccessControlExposeHeaders = "Access-Control-Expose-Headers",
+    AccessControlMaxAge = "Access-Control-Max-Age",
+    AccessControlRequestHeaders = "Access-Control-Request-Headers",
+    AccessControlRequestMethod = "Access-Control-Request-Method",
+    Origin = "Origin",
+    TimingAllowOrigin = "Timing-Allow-Origin";
 }
 
 // HTTP Status Codes Reference
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-export namespace InformationStatusCode {
+
+export namespace HttpStatus {
   export const Continue = 100,
     SwitchingProtocol = 101,
     Processing = 102,
     EarlyHints = 103;
-}
 
-export namespace SuccessfulStatusCode {
   export const OK = 200,
     Created = 201,
     Accepted = 202,
@@ -123,9 +102,7 @@ export namespace SuccessfulStatusCode {
     MultiStatus = 207,
     AlreadyReported = 208,
     IMUsed = 226;
-}
 
-export namespace RedirectStatusCode {
   export const MultipleChoice = 300,
     MovedPermanently = 301,
     Found = 302,
@@ -133,9 +110,7 @@ export namespace RedirectStatusCode {
     NotModified = 304,
     TemporaryRedirect = 307,
     PermanentRedirect = 308;
-}
 
-export namespace ClientErrorStatusCode {
   export const BadRequest = 400,
     Unauthorized = 401,
     Forbidden = 403,
@@ -159,9 +134,7 @@ export namespace ClientErrorStatusCode {
     TooManyRequests = 429,
     RequestHeaderFieldsTooLarge = 431,
     UnavailableForLegalReasons = 451;
-}
 
-export namespace ServerErrorStatusCode {
   export const InternalServerError = 500,
     NotImplemented = 501,
     BadGateway = 502,
