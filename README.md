@@ -75,7 +75,7 @@ export default router;
 ```ts
 // index.ts
 
-import { createApplication } from "https://deno.land/x/ant@v0.1.1/mod.ts";
+import { createApplication } from "https://deno.land/x/hyper-http@v0.1.1/mod.ts";
 import router from "./router.ts";
 
 const app = createApplication();
