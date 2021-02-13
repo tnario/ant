@@ -1,68 +1,31 @@
-# Ant v0.4.0
+![hyper-http-logo-svg](assets/deno-hyper-http.svg)
 
-simple and versatile server-side web framework.
+_An enhanced and lightweight HTTP web server._
 
-> NOTE: This is NOT production ready yet!
-> Test it out and give me some feedback :)
+# About hyper-http
 
-# Table Of Contents
+It is a lightweight HTTP web server framework, that wraps around the standard Deno [http](https://deno.land/std@0.87.0/http) module.
 
-- [Ant v0.4.0](#ant-v040)
-- [Table Of Contents](#table-of-contents)
-- [About](#about)
-  - [The Goal](#the-goal)
-- [Guide](#guide)
-  - [Hello World](#hello-world)
-  - [Using Routers](#using-routers)
-  - [Route Workflow](#route-workflow)
-  - [Making Routes Type Consistent](#making-routes-type-consistent)
-  - [Error handling](#error-handling)
-    - [Throwing Errors](#throwing-errors)
-    - [Defining Error Handling Process](#defining-error-handling-process)
-- [API Reference](#api-reference)
-  - [Application](#application)
-    - [Application.METHOD(path: string, ...steps: Callback[])](#applicationmethodpath-string-steps-callback)
-    - [Application.group(path: string, router: Router)](#applicationgrouppath-string-router-router)
-    - [Application.error(...handlers)](#applicationerrorhandlers)
-    - [Application.use(...handlers)](#applicationusehandlers)
-    - [Application.runHTTP(addr: string | HTTPOptions, cb?: () => void)](#applicationrunhttpaddr-string--httpoptions-cb---void)
-    - [Application.runHTTPS(addr: HTTPSOptions, cb?: () => void)](#applicationrunhttpsaddr-httpsoptions-cb---void)
-  - [Router](#router)
-    - [Router.METHOD(path: string, ...Callback[])](#routermethodpath-string-callback)
-  - [RequestCtx](#requestctx)
-    - [get url(): string](#get-url-string)
-    - [get method(): string](#get-method-string)
-    - [get ip(): string](#get-ip-string)
-    - [get headers(): Header](#get-headers-header)
-    - [get body()](#get-body)
-  - [ResponseCtx](#responsectx)
-    - [_status(code: number)_](#statuscode-number)
-    - [_set(...headers: string, string)_](#setheaders-string-string)
-    - [_get cookies()_](#get-cookies)
-      - [set(c: Cookie): void](#setc-cookie-void)
-      - [delete(name: string): void](#deletename-string-void)
-    - [send(d: Uint8Array | Deno.Reader | string)](#sendd-uint8array--denoreader--string)
+hyper-http is scalable and provides a user-friendly API for controlling the state of the application.
 
-# About
+The project is under MIT license, you can view it [here](LICENSE.md).
 
-**Ant** is a web server framework wrapping around the standart Deno http library with zero 3rd party dependencies.
+hyper-http features include:
 
-This project is under MIT license, you can view it [here](LICENSE.md).
-
-## The Goal
-
-To provide a framework that gives full control of the application state to the developer, has a wide range of standartized tools and a simple to use interface for building complex web apps.
+- Routers
+- Type Persistance
+- Middlewares
 
 # Guide
 
 ## Hello World
 
-Import and create an instance of `Application`. Define the routes using `Application.[METHOD]` and run your web application with `Application.runHTTP` or `Application.runHTTPS`.
+Import `createApplication` and create an instance of `Application`. Define the routes using `Application.[METHOD]` and run your web application with `Application.listenHTTP` or `Application.listenHTTPS`.
 
 ```ts
-import { Application } from "https://deno.land/x/ant@v0.1.1/mod.ts";
+import { createApplication } from "https://deno.land/x/hyper-http@v0.1.1/mod.ts";
 
-const app = new Application();
+const app = createApplication();
 
 app.get(
   "/",
@@ -72,11 +35,12 @@ app.get(
   async (req, res) => {
     console.log("handler 2");
 
-    res.status(200).send("hello world!").text();
+    res.body("hello world!");
+    res.send();
   }
 );
 
-app.runHTTP({ port: 8000 }, () => {
+app.listenHTTP({ port: 8000 }, () => {
   console.log("Listening on port 8000");
 });
 ```
@@ -88,19 +52,20 @@ When building a large web app, having your routes defined in one place is redund
 ```ts
 // router.ts
 
-import { Router } from "https://deno.land/x/ant@v0.1.1/mod.ts";
+import { createRouter } from "https://deno.land/x/hyper-http@v0.1.1/mod.ts";
 
-const router = new Router();
+const router = createRouter();
 
 router.get(
   "/",
   async (req, res) => {
-    console.log("middleware 1");
+    console.log("handler 1");
   },
   async (req, res) => {
-    console.log("middleware 2");
+    console.log("handler 2");
 
-    res.status(200).send("hello world!");
+    res.body("hello world!");
+    res.send();
   }
 );
 
@@ -110,10 +75,10 @@ export default router;
 ```ts
 // index.ts
 
-import { Application } from "https://deno.land/x/ant@v0.1.1/mod.ts";
+import { createApplication } from "https://deno.land/x/ant@v0.1.1/mod.ts";
 import router from "./router.ts";
 
-const app = new Application();
+const app = createApplication();
 
 app.group("/", router);
 
@@ -128,15 +93,15 @@ Each route holds an array of handlers that process the request. These handlers a
 
 ## Making Routes Type Consistent
 
-When defining routes using `Application.[METHOD]` or `Router.[METHOD]`, there is an option to declare generic types for `RequestCtx.params`, `RequestCtx.query` and `RequestCtx.body` that will persist throughout all route handlers.
+When defining routes using `Application.[METHOD]` or `Router.[METHOD]`, there is an option to declare generic types for `RequestContext.params`, `RequestContext.query` and `RequestContext.body` that will persist throughout all route handlers.
 
 **_type params_**
 
-P - corresponds to `RequestCtx.params` types.
+P - corresponds to `RequestContext.params` types.
 
-Q - corresponds to `RequestCtx.query` types.
+Q - corresponds to `RequestContext.query` types.
 
-B - corresponds to `RequestCtx.body` types (_only works when body is in JSON format_)
+B - corresponds to `RequestContext.body` types (_only works when body is in JSON format_)
 
 ```ts
 type ReqParams = {
@@ -157,16 +122,17 @@ router.get<P = ReqParams, Q = ReqQuery>(
   async (req, res) => {
     console.log("handler 2");
 
-    res.status(200).send("hello world!");
+    res.body("hello world!");
+    res.send();
   }
 );
 ```
 
 ## Error handling
 
-When an error is thrown using either `error()` or `throw` keyword the **Ant application** will stop executing the route handlers and go straight to error handling process.
+When an error is thrown using either `error()` or `throw` keyword the **hyper-http application** will stop executing the route handlers and go straight to error handling process.
 
-By default **Ant application** DOES NOT know how to handle errors. Error handling NEEDS to be defined by the developer using `Application.error`.
+By default **hyper-http application** DOES NOT know how to handle errors. Error handling NEEDS to be defined by the developer using `Application.error`.
 
 ### Throwing Errors
 
@@ -197,7 +163,7 @@ app.get("/", async (req, res, error) => {
 
 ### Defining Error Handling Process
 
-By default if the error handler does not send back a response using `res.send`, the **Ant application** will send a default error response payload with `status: 500` and an empty `body`.
+By default if the error handler does not send back a response using `res.send`, the **hyper-http application** will send a default error response payload with `status: 500` and an empty `body`.
 
 ```ts
 app.error(
@@ -223,31 +189,21 @@ app.error(
 
 Defines a HTTP route, where `METHOD` is one of supported HTTP methods
 
----
-
 ### Application.group(path: string, router: Router)
 
 Mounts `Router` and its contents to the `Application`.
-
----
 
 ### Application.error(...handlers)
 
 Used to define the error handling process.
 
----
-
 ### Application.use(...handlers)
 
 Used to define Application-Level handlers.
 
----
-
 ### Application.runHTTP(addr: string | HTTPOptions, cb?: () => void)
 
 Starts a **HTTP** web server process with the specified address `addr` and an optional callback `cb` function, that is executed before the web server process.
-
----
 
 ### Application.runHTTPS(addr: HTTPSOptions, cb?: () => void)
 
@@ -261,15 +217,21 @@ Starts a **HTTPS** web server process with the specified address `addr` and an o
 
 Defines a HTTP route, where `METHOD` is one of HTTP methods (GET, POST, DELETE, PUT, ...)
 
-## RequestCtx
+### Router.use(...handlers)
 
-Holds information about the incoming request.
+Used to define Router-Level handlers.
 
-**The supported properties of `RequestCtx` are:**
+---
+
+## RequestContext
+
+Holds information about the request.
+
+**The supported properties of `RequestContext` are:**
 
 ### get url(): string
 
-`RequestCtx.url` returns a string that represents the endpoint of a request.
+returns a string that represents the endpoint of a request.
 
 ```bash
 # full path
@@ -279,29 +241,21 @@ http://localhost:8000/customers
 /customers
 ```
 
----
-
 ### get method(): string
 
-`RequestCtx.method` returns a string that represents the HTTP method that was used for the request.
-
----
+returns a string that represents the HTTP method that was used for the request.
 
 ### get ip(): string
 
-`RequestCtx.ip` returns a string that represents the IP address of the server.
-
----
+returns a string that represents the IP address of the server.
 
 ### get headers(): Header
 
-`RequestCtx.headers` returns a `Header` object which holds and/or manipulates the headers of a request.
-
----
+returns a `Header` object which holds and/or manipulates the headers of a request.
 
 ### get body()
 
-`RequestCtx.body` contains key-value pairs of data that was submitted in the request. The `RequestCtx.body` returns getter properties that return the `body` of the request in a specific format. The supporter formats are:
+contains key-value pairs of data that was submitted in the request. The `.body` returns properties that return the `body` of the request in a specific format. The supported formats are:
 
 | Getter | Return Type           |
 | ------ | --------------------- |
@@ -311,46 +265,29 @@ http://localhost:8000/customers
 
 ---
 
-## ResponseCtx
+## ResponseContext
 
 Holds and controls the response data, that can be sent back to the client.
 
-### _status(code: number)_
-
-Sets the status code of the response.
-
----
-
-### _set(...headers: [string, string][])_
-
-Sets headers of the response.
-
----
-
-### _get cookies()_
+### get cookie()
 
 Returns two methods for setting and deleting cookies.
 
-#### set(c: Cookie): void
+- set(c: Cookie): void
+- delete(name: string): void
 
-Set a cookie to the response.
+### body(d: Uint8Array | Deno.Reader | string) => void
 
-#### delete(name: string): void
+Sets the response `body`
 
-Deletes a cookie from the response by specifying the `name` of the cookie.
+### send(status?: number) => void
 
----
+Sends the response payload back to the client.
 
-### send(d: Uint8Array | Deno.Reader | string)
+### get headers()
 
-Sets the response `body` and sends it to the client. To send the response body with a specific `"Content-Type"`, `.send()` exports few methods for that:
+returns `Header` object.
 
-| Method                    | Description                                      |
-| ------------------------- | ------------------------------------------------ |
-| json()                    | Sets `content-type` header to `application/json` |
-| text()                    | Sets `content-type` header to `text/plain`       |
-| html()                    | Sets `content-type` header to `text/html`        |
-| xml()                     | Sets `content-type` header to `text/xml`         |
-| type(contentType: string) | Sets `content-type` header to `contentType`      |
+### redirect(to: string, status: number) => void
 
----
+sends a response payload with redirection header backt to the client.
