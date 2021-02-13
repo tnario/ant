@@ -1,16 +1,16 @@
-![hyper-http-logo-svg](assets/deno-hyper-http.svg)
+![hyper_http_logo_svg](assets/deno-hyper-http.svg)
 
 _An enhanced and lightweight HTTP web server._
 
-# About hyper-http
+# About hyper_http
 
 It is a lightweight HTTP web server framework, that wraps around the standard Deno [http](https://deno.land/std@0.87.0/http) module.
 
-hyper-http is scalable and provides a user-friendly API for controlling the state of the application.
+hyper_http is scalable and provides a user-friendly API for controlling the state of the application.
 
-The project is under MIT license, you can view it [here](LICENSE.md).
+The project is under **MIT license**, you can view it [here](LICENSE.md).
 
-hyper-http features include:
+hyper_http features include:
 
 - Routers
 - Type Persistance
@@ -23,7 +23,7 @@ hyper-http features include:
 Import `createApplication` and create an instance of `Application`. Define the routes using `Application.[METHOD]` and run your web application with `Application.listenHTTP` or `Application.listenHTTPS`.
 
 ```ts
-import { createApplication } from "https://deno.land/x/hyper-http@v0.1.1/mod.ts";
+import { createApplication } from "https://deno.land/x/hyper_http@v0.1.1/mod.ts";
 
 const app = createApplication();
 
@@ -52,7 +52,7 @@ When building a large web app, having your routes defined in one place is redund
 ```ts
 // router.ts
 
-import { createRouter } from "https://deno.land/x/hyper-http@v0.1.1/mod.ts";
+import { createRouter } from "https://deno.land/x/hyper_http@v0.1.1/mod.ts";
 
 const router = createRouter();
 
@@ -75,7 +75,7 @@ export default router;
 ```ts
 // index.ts
 
-import { createApplication } from "https://deno.land/x/hyper-http@v0.1.1/mod.ts";
+import { createApplication } from "https://deno.land/x/hyper_http@v0.1.1/mod.ts";
 import router from "./router.ts";
 
 const app = createApplication();
@@ -130,9 +130,9 @@ router.get<P = ReqParams, Q = ReqQuery>(
 
 ## Error handling
 
-When an error is thrown using either `error()` or `throw` keyword the **hyper-http application** will stop executing the route handlers and go straight to error handling process.
+When an error is thrown using either `error()` or `throw` keyword the **hyper_http application** will stop executing the route handlers and go straight to error handling process.
 
-By default **hyper-http application** DOES NOT know how to handle errors. Error handling NEEDS to be defined by the developer using `Application.error`.
+By default **hyper_http application** DOES NOT know how to handle errors. Error handling NEEDS to be defined by the developer using `Application.error`.
 
 ### Throwing Errors
 
@@ -163,7 +163,7 @@ app.get("/", async (req, res, error) => {
 
 ### Defining Error Handling Process
 
-By default if the error handler does not send back a response using `res.send`, the **hyper-http application** will send a default error response payload with `status: 500` and an empty `body`.
+By default if the error handler does not send back a response using `res.send`, the **hyper_http application** will send a default error response payload with `status: 500` and an empty `body`.
 
 ```ts
 app.error(
