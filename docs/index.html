@@ -3,7 +3,154 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./style.css" />
     <title>hyper-http</title>
   </head>
-  <body></body>
+  <body>
+    <div id="page">
+      <div id="page__nav-container">
+        <div id="page__nav-container__sticky-container">
+          <div id="page__nav-container__sticky-container__logo">
+            <img
+              class="responsive-img"
+              src="./assets/deno-hyper-http.svg"
+              alt="deno-hyper-http.svg"
+            />
+          </div>
+          <p id="page__nav-container__sticky-container__short-desc">
+            Enhanced and lightweight Deno HTTP web server.
+          </p>
+          <a
+            id="page__nav-container__sticky-container__gh-repo-link"
+            href="https://github.com/tnario/deno-hyper-http"
+            target="_blank"
+            >View Project on Github</a
+          >
+        </div>
+      </div>
+      <div id="page__content-container">
+        <main>
+          <section id="about">
+            <h1>About</h1>
+            <p>
+              <b>hyper_http</b> is a lightweight HTTP web server framework, that
+              wraps around the standard
+              <a href="https://deno.land/std@0.87.0/http" target="_blank"
+                >Deno http module</a
+              >. hyper_http is scalable and provides a user-friendly API for
+              controlling the state of the application.
+            </p>
+            <p>This project is under the <b>MIT license</b>.</p>
+          </section>
+          <!-- <section id="usage">
+            <h1>Usage</h1>
+          </section> -->
+          <section id="api-ref">
+            <h1>API Reference</h1>
+            <article>
+              <h2>Application</h2>
+              <h3>Application.[METHOD](path: string, ...steps: Callback[])</h3>
+              <p>
+                Creates a HTTP route, where METHOD is one of supported HTTP
+                methods.
+              </p>
+              <h3>Application.group(path: string, ...router: Router)</h3>
+              <p>
+                Mounts <b>Router</b> and its contents to the
+                <b>Application</b> instance.
+              </p>
+              <h3>Application.error(...handlers)</h3>
+              <p>Used to define the error handling process.</p>
+              <h3>Application.use(...handlers)</h3>
+              <p>Used to define Application-Level handlers.</p>
+              <h3>
+                Application.runHTTP(addr: string | HTTPOptions, cb?: () => void)
+              </h3>
+              <p>
+                Starts a HTTP web server process with the specified address
+                <b>addr</b> and an optional callback <b>cb</b> function, that is
+                executed before the web server process.
+              </p>
+              <h3>Application.runHTTPS(addr: HTTPSOptions, cb?: () => void)</h3>
+              <p>
+                Starts a HTTPS web server process with the specified address
+                <b>addr</b> and an optional callback <b>cb</b> function, that is
+                executed before the web server process.
+              </p>
+            </article>
+            <hr />
+            <article>
+              <h2>Router</h2>
+              <h3>Router.[METHOD](path: string, ...Callback[])</h3>
+              <p>
+                Creates a HTTP route, where METHOD is one of supported HTTP
+                methods.
+              </p>
+              <h3>Router.use(...handlers)</h3>
+              <p>Used to define Router-Level handlers.</p>
+            </article>
+            <hr />
+            <article>
+              <h2>RequestContext</h2>
+              <p>Holds and manipulates information about the request.</p>
+              <h3>get url(): string</h3>
+              <p>returns a string that represents the resource of a request.</p>
+              <h3>get method(): string</h3>
+              <p>
+                returns a string that represents the HTTP method that was used
+                for the request.
+              </p>
+              <h3>get ip(): string</h3>
+              <p>
+                returns a string that represents the IP address of the server.
+              </p>
+              <h3>get headers(): Header</h3>
+              <p>
+                returns a <b>Header</b> object which holds and/or manipulates
+                the headers of a request.
+              </p>
+              <h3>get body()</h3>
+              <p>
+                contains key-value pairs of data that was submitted in the
+                request. The <b>.body</b> returns properties that return the
+                body of the request in a specific format. The supported formats
+                are:
+              </p>
+              <ul>
+                <li>get json(): any</li>
+                <li>get text(): string</li>
+                <li>gett raw(): Uint8Array</li>
+              </ul>
+            </article>
+            <hr />
+            <article>
+              <h2>ResponseContext</h2>
+              <p>
+                Holds and controls the response data, that can be sent back to
+                the client.
+              </p>
+              <h3>get cookie()</h3>
+              <p>Returns two methods for setting and deleting cookies.</p>
+              <ul>
+                <li>set(c: Cookie): void</li>
+                <li>delete(name: string): void</li>
+              </ul>
+              <h3>body(d: Uint8Array | Deno.Reader | string) => void</h3>
+              <p>Sets the response <b>body</b></p>
+              <h3>send(status?: number) => void</h3>
+              <p>Sends the response payload back to the client.</p>
+              <h3>get headers(): Header</h3>
+              <p>returns <b>Header</b> object.</p>
+              <h3>redirect(to: string, status: number) => void</h3>
+              <p>
+                sends a response payload with redirection header backt to the
+                client.
+              </p>
+            </article>
+            <hr />
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
 </html>

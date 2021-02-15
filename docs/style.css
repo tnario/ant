@@ -1,0 +1,94 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: rgb(236, 236, 236);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+*:focus {
+  outline: none;
+}
+
+a {
+  text-decoration: none;
+  color: rgb(59, 128, 255);
+}
+a:hover,
+a:focus {
+  text-decoration: underline;
+}
+a:visited {
+  color: rgb(160, 59, 255);
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgb(190, 190, 190);
+}
+
+h2 {
+  margin: 0;
+  margin-bottom: 1rem;
+}
+
+.responsive-img {
+  height: 100%;
+}
+
+#page {
+  width: 87%;
+  max-width: 1220px;
+  min-height: 100%;
+  margin: 0 auto;
+  display: flex;
+}
+
+#page__nav-container {
+  min-height: 100%;
+  flex: 1;
+}
+
+#page__nav-container__sticky-container {
+  padding-top: 4rem;
+  position: sticky;
+  top: 0;
+}
+
+#page__nav-container__sticky-container__logo {
+  height: 100px;
+  margin-bottom: 2rem;
+}
+
+#page__nav-container__sticky-container__short-desc {
+  margin: 0;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+#page__nav-container__sticky-container__gh-repo-link {
+  color: grey;
+  text-decoration: none;
+  font-size: 1.3rem;
+}
+
+#page__nav-container__sticky-container__gh-repo-link:focus,
+#page__nav-container__sticky-container__gh-repo-link:hover {
+  color: rgb(59, 128, 255);
+}
+
+#page__content-container {
+  min-height: 100%;
+  padding-top: 4rem;
+  padding-left: 20%;
+  flex: 2;
+}
