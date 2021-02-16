@@ -1,14 +1,18 @@
-import { createApplication, createRouter } from "../mod.ts";
-import { ContentTypes, HttpHeaders } from "../src/constants.ts";
+import {
+  createApplication,
+  createRouter,
+  MediaType,
+  HttpHeader,
+} from "../mod.ts";
 
 const app = createApplication();
 const router = createRouter();
 
-// console.log(app);
+app.static("/web/", "./test", { exts: ["html"] });
 
-router.use(async (req, res, err) => {
-  console.log("router-level handler");
-});
+// router.use(async (req, res, err) => {
+//   console.log("router-level handler");
+// });
 
 app.use(async (req, res) => {
   console.log("app-level handler");
@@ -22,23 +26,21 @@ router.get(
     console.log("route-level handler");
   },
   async (req, res) => {
-    const doc = await Deno.readFile("./test/doc.html");
-    res.headers.set(HttpHeaders.ContentType, ContentTypes.textHtml);
-    res.body(doc);
+    res.headers.set(HttpHeader.ContentType, MediaType.TextHtml);
     res.send();
   }
 );
 
-router.get("/:id", async (req) => {
-  console.log(req.params.id);
+router.get("/:id", async (req, res) => {
+  res.redirect("https://tnario.github.io/deno-hyper-http/", 301);
 });
 
-app.group("/", router);
+app.group("/q", router);
 
 app.error(async (err, req, res) => {
   console.log(err);
 
-  res.body(err.message);
+  res.body = err.message;
   res.send();
 });
 

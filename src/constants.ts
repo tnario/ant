@@ -10,23 +10,21 @@ export namespace HttpMethod {
     TRACE = "TRACE";
 }
 
-export namespace ContentTypes {
-  export const textPlain = "text/plain",
-    applicationOctetStream = "application/octet-stream",
-    textCss = "text/css",
-    textCvs = "text/csv",
-    applicationGzip = "application/gzip",
-    textHtml = "text/html",
-    textJavascript = "text/javascript",
-    applicationJson = "application/json",
-    applicationXhtml = "application/xhtml+xml",
-    applicationXml = "application/xml",
-    textXml = "text/xml";
+export namespace MediaType {
+  export const TextPlain = "text/plain",
+    ApplicationOctetStream = "application/octet-stream",
+    TextCss = "text/css",
+    TextCvs = "text/csv",
+    ApplicationGzip = "application/gzip",
+    TextHtml = "text/html",
+    TextJavascript = "text/javascript",
+    ApplicationJson = "application/json",
+    ApplicationXhtml = "application/xhtml+xml",
+    ApplicationXml = "application/xml",
+    TextXml = "text/xml";
 }
 
-export const ANT_VERSION = "Ant/0.3.0";
-
-export namespace HttpHeaders {
+export namespace HttpHeader {
   export const WWWAuthenticate = "WWW-Authenticate",
     Authorization = "Authorization",
     ProxyAuthenticate = "Proxy-Authenticate",

@@ -1,19 +1,16 @@
-import { Response } from "https://deno.land/std@0.83.0/http/server.ts";
-import {
-  Cookie,
-  deleteCookie,
-  setCookie,
-} from "https://deno.land/std@0.83.0/http/cookie.ts";
+import { Response } from "http/server.ts";
+import { Cookie, deleteCookie, setCookie } from "http/cookie.ts";
 
 export interface ResponseContext {
   headers: Headers;
-  body: (d: Uint8Array | Deno.Reader | string) => void;
+  body: Uint8Array | Deno.Reader | string;
   redirect: (to: string, status: number) => void;
   send: (status?: number) => void;
   cookie: {
     set: (c: Cookie) => void;
     delete: (name: string) => void;
   };
+  contentType: string;
 }
 
 export function createResponseContext(
@@ -22,10 +19,6 @@ export function createResponseContext(
 ): ResponseContext {
   const headers = new Headers();
   resRef.headers = headers;
-
-  function body(d: Uint8Array | Deno.Reader | string) {
-    resRef.body = d;
-  }
 
   function redirect(to: string, status: number) {
     if (!(status >= 300 && status < 400)) {
@@ -44,6 +37,10 @@ export function createResponseContext(
   }
 
   return {
+    set contentType(mediaType: string) {
+      headers.set("content-type", mediaType);
+    },
+
     get headers() {
       return headers;
     },
@@ -55,7 +52,9 @@ export function createResponseContext(
       };
     },
 
-    body,
+    set body(d: Uint8Array | Deno.Reader | string) {
+      resRef.body = d;
+    },
     send,
     redirect,
   };

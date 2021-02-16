@@ -1,5 +1,6 @@
-import { ServerRequest } from "https://deno.land/std@0.83.0/http/server.ts";
-import { getCookies } from "https://deno.land/std@0.83.0/http/cookie.ts";
+import { ServerRequest } from "http/server.ts";
+import { encode } from "encoding/base64.ts";
+import { getCookies } from "http/cookie.ts";
 
 export interface RequestContext<
   P = Record<string, string>,
@@ -21,6 +22,8 @@ export interface RequestContext<
   url: string;
   method: string;
   headers: Headers;
+  accepts: (mediaType: string) => boolean;
+  basicAuth: (credentials: string) => boolean;
 }
 
 export async function createRequestContext(
@@ -36,7 +39,36 @@ export async function createRequestContext(
 
   const getTextBody = (d: Uint8Array) => decoder.decode(d);
 
+  // HTTP Accept Header Check
+  const parsedAcceptHeader = (req.headers.get("accept") || "")
+    .replaceAll(" ", "")
+    .split(",")
+    .map((x) => x.split(";")[0].toLowerCase());
+
+  function accepts(mediaType: string) {
+    return parsedAcceptHeader.includes(mediaType.toLowerCase());
+  }
+
+  // HTTP Authorization Header Check
+  const authorizationHeader = req.headers.get("authorization");
+
+  // Basic Auth
+  function basicAuth(credentials: string) {
+    if (!authorizationHeader) {
+      throw new Error("Authorization Header Is Not Set In Request Context!");
+    }
+    const [type, cred] = authorizationHeader.split(" ");
+
+    if (type.toLowerCase() !== "basic") {
+      throw new Error("Authorization Header Is Not Of Type 'Basic'!");
+    }
+
+    return encode(credentials) === cred;
+  }
+
   return {
+    basicAuth,
+    accepts,
     params,
     query,
 

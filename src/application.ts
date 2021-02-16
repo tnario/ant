@@ -5,7 +5,8 @@ import {
   serve,
   Server,
   serveTLS,
-} from "https://deno.land/std@0.83.0/http/server.ts";
+} from "http/server.ts";
+import { walkSync } from "fs/mod.ts";
 import { Router } from "./router.ts";
 import {
   createRouteController,
@@ -16,6 +17,7 @@ import { parseQueryString, parseRoute } from "./utilities.ts";
 import { CallBack, ErrorCallBack } from "./types.ts";
 import { createRequestContext } from "./request.ts";
 import { createResponseContext } from "./response.ts";
+import { MediaType } from "./constants.ts";
 
 export interface Application extends RouteController {
   group: (path: string, ...routers: Router[]) => void;
@@ -23,14 +25,56 @@ export interface Application extends RouteController {
   error: (...steps: ErrorCallBack[]) => void;
   listenHTTP: (addr: string | HTTPOptions, cb?: () => void) => Promise<void>;
   listenHTTPS: (addr: HTTPSOptions, cb?: () => void) => Promise<void>;
+  static: (prefix: string, root: string, options?: StaticOptions) => void;
 }
+
+type StaticOptions = {
+  exts?: string[];
+};
 
 export function createApplication(): Application {
   const routeTree: Record<string, RouteNode> = {};
   const appHandlers: CallBack[] = [];
   const routerHandlerMap: Record<string, CallBack[]> = {};
   const errorHandlers: ErrorCallBack[] = [];
+
   const { routesTable, routeController } = createRouteController();
+
+  function _static(prefix: string, root: string, options?: StaticOptions) {
+    const fileStack = options
+      ? walkSync(root, { exts: options.exts })
+      : walkSync(root);
+
+    const mediaTypes: Record<string, string> = {
+      html: MediaType.TextHtml,
+      css: MediaType.TextCss,
+      js: MediaType.TextJavascript,
+      txt: MediaType.TextPlain,
+      json: MediaType.ApplicationJson,
+    };
+
+    for (const f of fileStack) {
+      if (f.isDirectory) continue;
+      const path =
+        "/" +
+        [
+          ...prefix.split("/").filter((x) => x !== ""),
+          ...f.path
+            .split("/")
+            .filter((x) => x !== "")
+            .slice(1),
+        ].join("/");
+
+      routeController.get(path, async (req, res) => {
+        const [_, ext] = f.name.split(".");
+        const document = await Deno.readFile(f.path);
+
+        res.contentType = mediaTypes[ext] || MediaType.TextPlain;
+        res.body = document;
+        res.send(200);
+      });
+    }
+  }
 
   function group(path: string, ...routers: Router[]) {
     for (const router of routers) {
@@ -58,24 +102,39 @@ export function createApplication(): Application {
   async function runServer(server: Server) {
     // 1. generate route tree
     for (const route of routesTable) {
+      // 1.1 create root branch if non-existing
       if (!(route.method in routeTree)) {
         routeTree[route.method] = new RouteNode();
       }
 
       let node = routeTree[route.method];
+
+      // 1.2 parse route path
       const [pathSegments, paramMap] = parseRoute(route.path);
       const lastIndex = pathSegments.length - 1;
 
+      // 1.3 begin nesting route path
       for (let i = 0; i < lastIndex; i++) {
         const seg = pathSegments[i];
 
+        // 1.3.1 create a new route layer
         if (!(seg in node.children)) {
           node.children[seg] = new RouteNode();
         }
 
+        // 1.3.2 go to the next layer
         node = node.children[seg];
       }
 
+      // 1.4 if layer exists, insert required route data
+      if (node.children[pathSegments[lastIndex]]) {
+        node.children[pathSegments[lastIndex]].callbacks = route.callbacks;
+        node.children[pathSegments[lastIndex]].params = paramMap;
+        node.children[pathSegments[lastIndex]].routerPath = route.routerPath;
+        break;
+      }
+
+      // 1.5 if layer is non-existing, create new layer with required route data
       node.children[pathSegments[lastIndex]] = new RouteNode(
         route.callbacks,
         paramMap,
@@ -221,6 +280,7 @@ export function createApplication(): Application {
   }
 
   return {
+    static: _static,
     listenHTTP,
     listenHTTPS,
     group,
