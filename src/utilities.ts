@@ -1,3 +1,5 @@
+import { CallBack, ErrorCallBack } from "./types.ts";
+
 export function parseRoute(path: string): [string[], Record<number, string>] {
   const pathSegments = [
     "/",
@@ -28,4 +30,16 @@ export function parseQueryString(query: string) {
       acc[k] = v;
       return acc;
     }, {});
+}
+
+export function sanitizePath(path: string): string {
+  return "/" + [...path.split("/").filter((x) => x !== "")].join("/");
+}
+
+export function useMiddleware(...middleware: CallBack[]) {
+  return middleware;
+}
+
+export function useErrorMiddleware(...middleware: ErrorCallBack[]) {
+  return middleware;
 }
