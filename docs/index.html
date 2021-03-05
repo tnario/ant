@@ -30,7 +30,7 @@
       </div>
       <div id="page__content-container">
         <main>
-          <section id="about">
+          <!-- <section id="about">
             <h1>About</h1>
             <p>
               <b>hyper_http</b> is a lightweight HTTP web server framework, that
@@ -41,113 +41,109 @@
               controlling the state of the application.
             </p>
             <p>This project is under the <b>MIT license</b>.</p>
-          </section>
+          </section> -->
           <!-- <section id="usage">
             <h1>Usage</h1>
           </section> -->
           <section id="api-ref">
             <h1>API Reference</h1>
             <article>
-              <h2>Application</h2>
-              <h3>Application.[METHOD](path: string, ...steps: Callback[])</h3>
+              <h2>useRoutes(): [ Route[], RouteController ]</h2>
+              <p>returns a tuple that contains two variables:</p>
               <p>
-                Creates a HTTP route, where METHOD is one of supported HTTP
-                methods.
+                <b>container: Route[]</b> - holds a list of the routes that have
+                been pushed by the <i>controller</i>.
               </p>
-              <h3>Application.group(path: string, ...router: Router)</h3>
               <p>
-                Mounts <b>Router</b> and its contents to the
-                <b>Application</b> instance.
-              </p>
-              <h3>Application.error(...handlers)</h3>
-              <p>Used to define the error handling process.</p>
-              <h3>Application.use(...handlers)</h3>
-              <p>Used to define Application-Level handlers.</p>
-              <h3>
-                Application.runHTTP(addr: string | HTTPOptions, cb?: () => void)
-              </h3>
-              <p>
-                Starts a HTTP web server process with the specified address
-                <b>addr</b> and an optional callback <b>cb</b> function, that is
-                executed before the web server process.
-              </p>
-              <h3>Application.runHTTPS(addr: HTTPSOptions, cb?: () => void)</h3>
-              <p>
-                Starts a HTTPS web server process with the specified address
-                <b>addr</b> and an optional callback <b>cb</b> function, that is
-                executed before the web server process.
+                <b>controller: RouteController</b> - and object that has methods
+                for adding routes to the <i>container</i> by referance.
               </p>
             </article>
             <hr />
             <article>
-              <h2>Router</h2>
-              <h3>Router.[METHOD](path: string, ...Callback[])</h3>
+              <h2>
+                router(prefix: string, ...middleware: CallBack[])(routes:
+                Route[] = []): RouterContainer
+              </h2>
               <p>
-                Creates a HTTP route, where METHOD is one of supported HTTP
-                methods.
+                this returns a router container, that holds the <b>prefix</b>,
+                an array of Router-Level <b>middleware</b> and an array of
+                <b>routes</b>.
               </p>
-              <h3>Router.use(...handlers)</h3>
-              <p>Used to define Router-Level handlers.</p>
+              <p>The <b>first</b> invokation brackets requires:</p>
+              <p><b>prefix: string</b> - a path prefix for identification.</p>
+              <p>
+                <b>...middleware: CallBack[]</b> - an array of Router-Level
+                functions.
+              </p>
+              <p>The <b>second</b> invokation brackets requires:</p>
+              <p>
+                <b>routes: Route[]</b> - an array of routes. Default is an empty
+                array.
+              </p>
             </article>
             <hr />
             <article>
-              <h2>RequestContext</h2>
-              <p>Holds and manipulates information about the request.</p>
-              <h3>get url(): string</h3>
-              <p>returns a string that represents the resource of a request.</p>
-              <h3>get method(): string</h3>
+              <h2>useMiddleware(...middleware: CallBack[]): CallBack[]</h2>
               <p>
-                returns a string that represents the HTTP method that was used
-                for the request.
+                returns the same <b>middleware</b> array. This funtion is only
+                for readability. <b>CallBack</b> funtions can be inserted in
+                Application-Level, Router-Level and Route-Level handling.
               </p>
-              <h3>get ip(): string</h3>
-              <p>
-                returns a string that represents the IP address of the server.
-              </p>
-              <h3>get headers(): Header</h3>
-              <p>
-                returns a <b>Header</b> object which holds and/or manipulates
-                the headers of a request.
-              </p>
-              <h3>get body()</h3>
-              <p>
-                contains key-value pairs of data that was submitted in the
-                request. The <b>.body</b> returns properties that return the
-                body of the request in a specific format. The supported formats
-                are:
-              </p>
-              <ul>
-                <li>get json(): any</li>
-                <li>get text(): string</li>
-                <li>gett raw(): Uint8Array</li>
-              </ul>
             </article>
             <hr />
             <article>
-              <h2>ResponseContext</h2>
+              <h2>
+                useErrorMiddleware(...middleware: ErrorCallBack[]):
+                ErrorCallBack[]
+              </h2>
               <p>
-                Holds and controls the response data, that can be sent back to
-                the client.
-              </p>
-              <h3>get cookie()</h3>
-              <p>Returns two methods for setting and deleting cookies.</p>
-              <ul>
-                <li>set(c: Cookie): void</li>
-                <li>delete(name: string): void</li>
-              </ul>
-              <h3>body(d: Uint8Array | Deno.Reader | string) => void</h3>
-              <p>Sets the response <b>body</b></p>
-              <h3>send(status?: number) => void</h3>
-              <p>Sends the response payload back to the client.</p>
-              <h3>get headers(): Header</h3>
-              <p>returns <b>Header</b> object.</p>
-              <h3>redirect(to: string, status: number) => void</h3>
-              <p>
-                sends a response payload with redirection header backt to the
-                client.
+                returns the same <b>middleware</b> array. This funtion is only
+                for readability. <b>ErrorCallBack</b> is used only for error
+                handling purpose.
               </p>
             </article>
             <hr />
+            <article>
+              <h2><i>async</i> serveHTTP(...)</h2>
+              <p>starts the web server process.</p>
+              <p>
+                <b>serveHTTP</b> is a three stage higher-order function, the
+                first invocation accepts three arguments:
+              </p>
+              <p>
+                <b>middleware: CallBack[]</b> - is used to set Application-Level
+                functions.
+              </p>
+              <p>
+                <b>routes: Route[]</b> - used to set any additional routes to
+                the application.
+              </p>
+              <p>
+                <b>error: ErrorCallBack[]</b> - is used for the error handling
+                process and is required.
+              </p>
+
+              <p>
+                The second invocation is for adding <i>routers</i>
+                <b>(RouterContainer[])</b>
+              </p>
+              <p>
+                The last invocation accepts the address and an optional calback
+                for the server:
+              </p>
+              <p><b>addr: string | HTTPOptions</b></p>
+              <p><b>cb?: () => void</b></p>
+            </article>
+            <hr />
+            <article>
+              <h2><i>async</i> serveHTTPS(...)</h2>
+              <p>
+                almost identical to <b>serveHTTP</b> except the argument for
+                <b>addr</b> is diffrent and requires additional information for
+                running a secure web server (TLS).
+              </p>
+            </article>
           </section>
         </main>
       </div>

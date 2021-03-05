@@ -2,7 +2,12 @@ import { HttpMethod } from "./constants.ts";
 import { Route } from "./containers.ts";
 import { CallBack } from "./types.ts";
 
-export interface UseRoutes {
+export interface RouteController {
+  add: <P = any, Q = any>(
+    method: string,
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) => void;
   get: <P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) => void;
   post: <P = any, Q = any, B = any>(
     path: string,
@@ -35,7 +40,7 @@ export interface UseRoutes {
   ) => void;
 }
 
-export function useRoutes(): [Route[], UseRoutes] {
+export function useRoutes(): [Route[], RouteController] {
   const container: Route[] = [];
 
   function get<P = any, Q = any>(path: string, ...callbacks: CallBack<P, Q>[]) {
@@ -89,18 +94,26 @@ export function useRoutes(): [Route[], UseRoutes] {
     container.push(new Route(HttpMethod.CONNECT, path, callbacks));
   }
 
-  return [
-    container,
-    {
-      get,
-      post,
-      delete: del,
-      put,
-      options,
-      patch,
-      head,
-      trace,
-      connect,
-    },
-  ];
+  function add<P = any, Q = any>(
+    method: string,
+    path: string,
+    ...callbacks: CallBack<P, Q>[]
+  ) {
+    container.push(new Route(method, path, callbacks));
+  }
+
+  const controller = {
+    add,
+    get,
+    post,
+    delete: del,
+    put,
+    options,
+    patch,
+    head,
+    trace,
+    connect,
+  };
+
+  return [container, controller];
 }
